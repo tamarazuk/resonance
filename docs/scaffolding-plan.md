@@ -9,14 +9,18 @@
 ```
 resonance/
 ├── apps/
-│   └── steadyhand/              # Next.js 16 App Router (the MVP)
+│   ├── steadyhand/              # Next.js 16 App Router (the MVP)
+│   └── storybook/               # Storybook for shared UI development
 ├── packages/
 │   ├── db/                      # Drizzle schema + client + migrations
 │   ├── types/                   # Shared TS interfaces + Zod schemas
 │   ├── ui/                      # Shared React component library
 │   ├── eslint-config/           # Shared ESLint config
 │   └── typescript-config/       # Shared tsconfig bases
+├── e2e/                         # Playwright E2E tests
 ├── docker-compose.yml           # PostgreSQL + pgvector (local dev)
+├── vitest.workspace.ts          # Monorepo-wide vitest config
+├── playwright.config.ts         # E2E test config
 ├── turbo.json
 ├── package.json                 # Root workspace config
 ├── pnpm-workspace.yaml
@@ -73,9 +77,9 @@ resonance/
 
 ### Step 1.3 — Pre-commit hooks
 
-1. Install husky + lint-staged:
+1. Install husky + lint-staged + prettier:
    ```sh
-   pnpm add -D husky lint-staged
+   pnpm add -D husky lint-staged prettier
    ```
 2. Initialize husky:
    ```sh
@@ -124,6 +128,7 @@ Create `packages/typescript-config/package.json`:
 Then create these tsconfig files:
 - `base.json` — strict mode, ES2022 target, `"moduleResolution": "bundler"`, `"module": "ESNext"`
 - `nextjs.json` — extends base, adds JSX + Next.js plugin
+- `react-library.json` — extends base, adds `"jsx": "react-jsx"` for React packages that aren't Next.js apps (used by `packages/ui`)
 - `library.json` — extends base, for non-React packages (db, types)
 
 ### Step 2.2 — `packages/eslint-config`
@@ -136,13 +141,23 @@ mkdir -p packages/eslint-config
 
 Create `packages/eslint-config/package.json` with `"name": "@resonance/eslint-config"`, then install deps:
 ```sh
-pnpm --filter @resonance/eslint-config add -D eslint typescript-eslint eslint-config-prettier eslint-plugin-prettier @next/eslint-plugin-next
+pnpm --filter @resonance/eslint-config add -D eslint typescript-eslint eslint-config-prettier @next/eslint-plugin-next
 ```
 
+> **Note:** `eslint-plugin-prettier` is intentionally omitted — Prettier runs via lint-staged (Step 1.3), not inside ESLint. `eslint-config-prettier` only disables conflicting rules.
+
 Create flat config files:
-- Base config (TypeScript + Prettier)
+- Base config (TypeScript + Prettier conflict resolution)
 - Next.js config (extends base + Next.js rules)
 - Library config (extends base, no React rules)
+
+Each consuming workspace needs `@resonance/eslint-config@workspace:*` as a devDep and its own `eslint.config.mjs` importing the appropriate config:
+```sh
+pnpm --filter @resonance/types add -D @resonance/eslint-config@workspace:*
+pnpm --filter @resonance/db add -D @resonance/eslint-config@workspace:*
+pnpm --filter @resonance/ui add -D @resonance/eslint-config@workspace:*
+pnpm --filter steadyhand add -D @resonance/eslint-config@workspace:*
+```
 
 ### Step 2.3 — `packages/types`
 
@@ -253,6 +268,133 @@ import { cn } from "@resonance/ui/lib/utils"
 ```
 
 **Both `components.json` files must have matching** `style`, `iconLibrary`, and `baseColor` values.
+
+### Step 2.6 — Testing infrastructure
+
+Unit and component testing setup across the monorepo. E2E testing (Playwright) is added later in Step 3.7.
+
+1. Install root-level testing deps:
+   ```sh
+   pnpm add -D vitest @vitest/coverage-v8
+   ```
+
+2. Install component testing deps in `packages/ui`:
+   ```sh
+   pnpm --filter @resonance/ui add -D @testing-library/react @testing-library/jest-dom happy-dom
+   ```
+
+3. Install component testing deps in the app (for app-specific component tests):
+   ```sh
+   pnpm --filter steadyhand add -D @testing-library/react @testing-library/jest-dom happy-dom
+   ```
+
+4. Create `vitest.workspace.ts` at the monorepo root:
+   ```ts
+   import { defineWorkspace } from "vitest/config"
+
+   export default defineWorkspace([
+     "packages/*/vitest.config.ts",
+     "apps/*/vitest.config.ts",
+   ])
+   ```
+
+5. Create per-package `vitest.config.ts` files:
+   - `packages/ui/vitest.config.ts` — `environment: "happy-dom"`, setup file importing `@testing-library/jest-dom`
+   - `packages/types/vitest.config.ts` — `environment: "node"` (pure logic tests)
+   - `packages/db/vitest.config.ts` — `environment: "node"` (optional: `@electric-sql/pglite` for integration tests)
+   - `apps/steadyhand/vitest.config.ts` — `environment: "happy-dom"`, path aliases matching `@/*`
+
+6. Add `test` task to `turbo.json`:
+   ```json
+   {
+     "test": {
+       "dependsOn": ["^build"]
+     }
+   }
+   ```
+
+7. Add root script:
+   ```json
+   {
+     "scripts": {
+       "test": "turbo test"
+     }
+   }
+   ```
+
+**Test file convention:** `*.test.ts` / `*.test.tsx` co-located with source files.
+
+### Step 2.7 — Storybook
+
+Dedicated Storybook app for developing and documenting shared UI components in isolation.
+
+1. Create the Storybook app workspace:
+   ```sh
+   mkdir -p apps/storybook/.storybook
+   ```
+
+2. Create `apps/storybook/package.json`:
+   ```json
+   {
+     "name": "storybook",
+     "version": "0.0.0",
+     "private": true,
+     "scripts": {
+       "storybook": "storybook dev -p 6006",
+       "build": "storybook build"
+     }
+   }
+   ```
+
+3. Install Storybook deps:
+   ```sh
+   pnpm --filter storybook add -D storybook @storybook/react-vite \
+     @storybook/addon-essentials @storybook/addon-interactions \
+     @storybook/test @resonance/ui@workspace:*
+   ```
+
+   > **Note:** Do not install `react` and `react-dom` directly — they are peer deps provided by `@resonance/ui`. If Storybook requires them explicitly, pin the same major version used by `apps/steadyhand` to avoid duplicate React runtime errors.
+
+4. Create `.storybook/main.ts`:
+   ```ts
+   import type { StorybookConfig } from "@storybook/react-vite"
+
+   const config: StorybookConfig = {
+     stories: [
+       "../../../packages/ui/src/**/*.stories.@(ts|tsx)",
+     ],
+     addons: [
+       "@storybook/addon-essentials",
+       "@storybook/addon-interactions",
+     ],
+     framework: "@storybook/react-vite",
+   }
+
+   export default config
+   ```
+
+5. Create `.storybook/preview.ts` — import `packages/ui` Tailwind v4 CSS so stories render with the correct theme.
+
+6. Add `storybook` task to `turbo.json`:
+   ```json
+   {
+     "storybook": {
+       "persistent": true,
+       "cache": false
+     }
+   }
+   ```
+
+7. Add root script:
+   ```json
+   {
+     "scripts": {
+       "storybook": "turbo storybook"
+     }
+   }
+   ```
+
+**Story file convention:** `*.stories.tsx` co-located with components in `packages/ui/src/`. Example: `packages/ui/src/components/button.stories.tsx`.
 
 ---
 
@@ -383,6 +525,51 @@ Create the directory structure:
 mkdir -p apps/steadyhand/components/{ui,memory,applications,layout}
 ```
 
+### Step 3.7 — E2E testing (Playwright)
+
+End-to-end tests for critical user flows. Added after pages and auth exist so there are real flows to test.
+
+1. Install Playwright at the root:
+   ```sh
+   pnpm add -D @playwright/test
+   npx playwright install --with-deps chromium
+   ```
+
+2. Create `playwright.config.ts` at the monorepo root:
+   ```ts
+   import { defineConfig } from "@playwright/test"
+
+   export default defineConfig({
+     testDir: "./e2e",
+     webServer: {
+       command: "pnpm --filter steadyhand dev",
+       port: 3000,
+       reuseExistingServer: !process.env.CI,
+     },
+     use: {
+       baseURL: "http://localhost:3000",
+     },
+   })
+   ```
+
+3. Create `e2e/` directory at the monorepo root for test files:
+   ```sh
+   mkdir -p e2e
+   ```
+
+4. Initial smoke tests to write:
+   - `e2e/auth.spec.ts` — signup, login, logout flows
+   - `e2e/dashboard.spec.ts` — authenticated navigation, redirect guards
+
+5. Add root script:
+   ```json
+   {
+     "scripts": {
+       "test:e2e": "playwright test"
+     }
+   }
+   ```
+
 ---
 
 ## Part 4: Local Dev Infrastructure
@@ -426,6 +613,9 @@ In root `package.json`:
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "test:e2e": "playwright test",
+    "storybook": "turbo storybook",
     "db:generate": "turbo db:generate",
     "db:push": "turbo db:push",
     "docker:up": "docker compose up -d",
@@ -466,12 +656,15 @@ Note: `mise run` tasks wrap these for convenience (e.g., `mise run setup` does i
 | 5 | Docker Compose + `.env.example` | Step 1 | `docker compose up -d` |
 | 6 | `packages/db` | Steps 2, 4, 5 | `pnpm --filter @resonance/db add drizzle-orm postgres` |
 | 7 | `apps/steadyhand` + `packages/ui` | Steps 2, 3 | `pnpm create next-app@latest ...` then `pnpm dlx shadcn@latest init` |
-| 8 | Auth setup | Step 7 | `pnpm --filter steadyhand add next-auth@5 bcryptjs` |
-| 9 | LLM pipeline modules (stubs) | Steps 4, 7 | `pnpm --filter steadyhand add openai ai zod` |
-| 10 | API routes (stubs) | Steps 6, 8, 9 | Create route files |
-| 11 | Page structure + layouts | Step 7 | Create page files |
-| 12 | Pre-commit hooks | Step 3 | `pnpm exec husky init` (already installed) |
-| 13 | Verify everything works | All | `mise run setup && pnpm dev` |
+| **8** | **Testing infrastructure (vitest)** | **Steps 2, 7** | **`pnpm add -D vitest @vitest/coverage-v8`** |
+| **9** | **Storybook** | **Step 7** | **`mkdir -p apps/storybook` + install storybook deps** |
+| 10 | Auth setup | Step 7 | `pnpm --filter steadyhand add next-auth@5 bcryptjs` |
+| 11 | LLM pipeline modules (stubs) | Steps 4, 7 | `pnpm --filter steadyhand add openai ai zod` |
+| 12 | API routes (stubs) | Steps 6, 10, 11 | Create route files |
+| 13 | Page structure + layouts | Step 7 | Create page files |
+| **14** | **E2E testing (Playwright)** | **Steps 10, 13** | **`pnpm add -D @playwright/test`** |
+| 15 | Pre-commit hooks | Step 3 | `pnpm exec husky init` (already installed) |
+| 16 | Verify everything works | All | `mise run setup && pnpm dev` |
 
 ---
 
@@ -485,3 +678,5 @@ Note: `mise run` tasks wrap these for convenience (e.g., `mise run setup` does i
 6. **Auth.js v5 (next-auth@5):** Stable with full App Router support. Uses `AUTH_SECRET` env var (not the legacy `NEXTAUTH_SECRET`). `AUTH_URL` is auto-detected on Vercel.
 7. **Next.js 16:** Turbopack is the default bundler. All request APIs (`cookies()`, `headers()`, `params`) are fully async — no synchronous access. Route handlers and middleware must `await` them. Use `npx @next/codemod@canary upgrade latest` if migrating existing code.
 8. **pnpm 10:** Dependency lifecycle scripts are disabled by default. Any deps needing post-install scripts (e.g., native bindings) must be listed in `pnpm.onlyBuiltDependencies` in root `package.json`.
+9. **Testing strategy:** Vitest for unit/component tests (fast, Vite-native, monorepo workspace support). `@testing-library/react` + `happy-dom` for component tests. Playwright for E2E — added later once pages and auth exist. Test files co-located with source (`*.test.tsx` alongside `*.tsx`).
+10. **Storybook:** Dedicated `apps/storybook` workspace rather than embedding config in `packages/ui`. Stories co-located with components (`*.stories.tsx`). Uses `@storybook/react-vite` for fast builds.
