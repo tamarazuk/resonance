@@ -83,7 +83,7 @@ Resonance is built as a **distributed, event-driven microservices architecture**
 
 ### 1.2 Design Principles
 
-1. **Privacy-First**: Local-first architecture where possible, zero-knowledge matching
+1. **Privacy-First**: Consent-gated data usage, explicit user control, and minimal cross-party data exposure
 2. **Event-Driven**: Async communication between services via event bus
 3. **API-First**: All features exposed via versioned APIs
 4. **Scalable**: Horizontal scaling, stateless services
@@ -101,6 +101,17 @@ Resonance is built as a **distributed, event-driven microservices architecture**
 | **Match Latency** | < 5 seconds | New profile to first match |
 | **Data Durability** | 99.999999999% | 11 9's for critical data |
 | **Security** | SOC 2 Type II | Annual compliance audit |
+
+### 1.4 PRD Guardrails (Non-Negotiable)
+
+| Guardrail | Architecture Implication |
+|---------|-------------|
+| **Double opt-in introductions** | Introduction endpoints must enforce `candidate_status=interested` AND `employer_status=interested` before unlock. |
+| **Humans decide, AI recommends** | No outbound intro, employer ping, or candidate outreach from model output alone. Every external action requires explicit API action by the acting user. |
+| **Candidate free forever** | No candidate-side paywall, ranking boost, or pay-for-placement path in matching and API gateway policy. |
+| **Consent-based model training** | Only candidates with explicit training consent are included in training corpora; revocation is auditable and honored in subsequent training datasets. |
+| **Explainable matching** | Every surfaced match includes machine-readable strengths, gaps, and rationale. |
+| **No demographic features in inference** | Protected-class data can be used only in offline fairness audits, never as online scoring features. |
 
 ---
 
@@ -730,10 +741,26 @@ CREATE TABLE candidates (
   -- Privacy settings
   visibility VARCHAR(50) DEFAULT 'matches_only',
   allow_contact BOOLEAN DEFAULT false,
+  match_notification_opt_in BOOLEAN DEFAULT true,
+  model_training_opt_in BOOLEAN DEFAULT false,
+  model_training_opt_in_at TIMESTAMP WITH TIME ZONE,
+  model_training_opt_out_at TIMESTAMP WITH TIME ZONE,
+  consent_version VARCHAR(50),
   
   -- Metadata
   onboarding_completed_at TIMESTAMP WITH TIME ZONE,
   last_match_notification_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Consent audit trail
+CREATE TABLE candidate_consent_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  candidate_id UUID NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+  consent_type VARCHAR(100) NOT NULL, -- 'model_training', 'notifications'
+  consent_value BOOLEAN NOT NULL,
+  consent_version VARCHAR(50) NOT NULL,
+  changed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  source VARCHAR(50) NOT NULL -- 'onboarding', 'settings', 'api'
 );
 
 -- Memory Bank: Experiences
@@ -1023,9 +1050,12 @@ CREATE TABLE matches (
   -- Status
   candidate_status VARCHAR(50), -- 'pending', 'interested', 'passed', 'saved'
   employer_status VARCHAR(50), -- 'pending', 'interested', 'passed', 'saved'
+  candidate_responded_at TIMESTAMP WITH TIME ZONE,
+  employer_responded_at TIMESTAMP WITH TIME ZONE,
   
   -- Introduction
   introduction_status VARCHAR(50), -- 'none', 'initiated', 'in_progress', 'completed', 'declined'
+  introduction_unlocked_at TIMESTAMP WITH TIME ZONE,
   introduced_at TIMESTAMP WITH TIME ZONE,
   
   -- Outcome tracking
@@ -1088,7 +1118,15 @@ CREATE TABLE match_feedback (
        │   └─> Calculate scores
        ├─> Generate explanations
        └─> Store matches
-           └─> Notification Service (if high confidence)
+           └─> Notification Service (candidate-only digest, requires notification opt-in)
+
+2. Candidate Decision
+   └─> Candidate marks match as interested/passed/saved
+       └─> If interested and source = first-party role (Clearview), notify employer queue
+
+3. Employer Decision (first-party roles only)
+   └─> Employer marks match as interested/passed/saved
+       └─> Introduction Service unlocks only when both sides are interested
 ```
 
 #### 4.2.3 Aggregation Flow
@@ -1105,6 +1143,10 @@ CREATE TABLE match_feedback (
            ├─> Quality Scoring
            └─> Embedding Generation
                └─> PostgreSQL + Elasticsearch
+
+2. Aggregated Posting Constraint
+   └─> External/aggregated roles do not trigger employer-side outreach workflows
+       └─> Candidate can only perform candidate-initiated outbound apply action
 ```
 
 ### 4.3 Data Privacy & Security
@@ -1320,6 +1362,7 @@ Match Outcome Analysis:
   • Statistical parity testing
   • Demographic impact analysis
   • Disparate impact detection
+  • Fairness data isolated in offline analytics store (never online scoring features)
   
   Methods:
     - Chi-square tests
@@ -1354,6 +1397,7 @@ Process-Level:
 ```
 Data Collection:
   ├─> User interactions (with consent)
+  ├─> Consent filter (only users with model_training_opt_in = true)
   ├─> Match outcomes
   ├─> Feedback (explicit & implicit)
   └─> External datasets (job boards, skills)
@@ -1376,6 +1420,11 @@ Validation:
   ├─> Fairness metrics
   ├─> A/B test planning
   └─> Model explainability (SHAP)
+
+Governance:
+  ├─> Dataset snapshots include consent_version
+  ├─> Consent revocation removes records from next training cycle
+  └─> Training lineage is auditable per model version
 ```
 
 #### 5.4.2 Model Serving
@@ -1439,6 +1488,10 @@ Versioning: URL path (/api/v1/)
 Format: JSON
 Authentication: JWT Bearer tokens
 Rate Limiting: Token bucket algorithm
+Action Guardrails:
+  • Match and introduction side effects require explicit user action APIs
+  • No server-initiated introduction messages without recorded user action
+  • Candidate-facing APIs cannot expose paid ranking or placement controls
 
 Response Format:
 {
@@ -1520,9 +1573,23 @@ GET    /api/v1/candidates/matches
   Query: ?status=pending&tier=strong&limit=20
   Response: { matches: [], total_count }
 
+GET    /api/v1/candidates/matches/:id/explanation
+  Response: { strengths: [], gaps: [], reasoning, score_breakdown: {} }
+
 POST   /api/v1/candidates/matches/:id/respond
   Request: { action: "interested" | "passed" | "saved" }
   Response: { updated_match }
+
+# Consent & Data Dignity
+PUT    /api/v1/candidates/consents
+  Request: { model_training_opt_in, match_notification_opt_in, consent_version }
+  Response: { updated_consents }
+
+GET    /api/v1/candidates/data-export
+  Response: { export_url, expires_at }
+
+DELETE /api/v1/candidates/account
+  Response: { deletion_requested: true, scheduled_delete_at }
 
 # Conversation
 WebSocket /api/v1/candidates/conversation
@@ -1565,6 +1632,12 @@ GET    /api/v1/employers/roles/:id/matches
 POST   /api/v1/employers/matches/:id/respond
   Request: { action: "interested" | "passed" | "saved" }
   Response: { updated_match }
+
+# Introduction (double opt-in enforced server-side)
+POST   /api/v1/matches/:id/introductions
+  Request: { initiated_by: "candidate" | "employer" }
+  Response: { status: "created" }
+  Errors: 409 if both sides are not already "interested"
 ```
 
 #### 6.2.3 GraphQL Schema
@@ -1975,6 +2048,13 @@ Data Minimization:
   • User data export functionality
   • User data deletion (GDPR/CCPA compliance)
 
+Data Dignity Guarantees:
+  • Candidate profiles are portable via self-serve export
+  • Model training uses explicit opt-in only
+  • No sale of candidate data to third parties
+  • No ad-targeting pipeline on candidate data
+  • Immutable audit log for consent changes and intro actions
+
 Secure Storage:
   • Secrets: AWS Secrets Manager
   • API keys: AWS Parameter Store (SecureString)
@@ -2159,8 +2239,12 @@ Features:
 
 Rate Limits:
   • Unauthenticated: 100 req/hour
-  • Authenticated: 1000 req/hour
-  • Premium: 10000 req/hour
+  • Authenticated candidate: 1000 req/hour
+  • Employer standard: 2000 req/hour
+  • Employer enterprise: 10000 req/hour
+
+Monetization Guardrail:
+  • Higher limits/features apply only to employer plans, never candidate visibility in matching
 
 Caching:
   • GET requests (5 min TTL)
@@ -2394,15 +2478,17 @@ Tools:
 - ✅ Match display and response
 - ✅ Basic cognitive load features (triage, prep)
 - ✅ Web application (mobile later)
+- ✅ Candidate-controlled notifications and consent controls
+- ✅ PRD bright line: no outbound communication without explicit user action
 
 **What's Out (v2)**:
 - ❌ Employer-facing Clearview tools
 - ❌ Multi-dimensional sophisticated matching
-- ❌ Double opt-in (simplified to single-sided)
 - ❌ Advanced cognitive load features
 - ❌ Mobile apps
 - ❌ Multiple aggregation sources
 - ❌ Advanced analytics
+- ❌ Automated employer outreach for aggregated postings
 
 ### 12.2 MVP Architecture
 
@@ -2433,6 +2519,11 @@ Simplified Architecture:
           │   (S3 for docs) │
           └─────────────────┘
 ```
+
+MVP Behavioral Guardrails:
+- For first-party roles, introductions still require double opt-in.
+- For aggregated external roles, MVP supports candidate-initiated outbound apply only (no employer-side workflow).
+- Match notifications are candidate opt-in and digest-based.
 
 ### 12.3 MVP Tech Stack
 
@@ -2642,6 +2733,8 @@ Technical:
   • 99.5% uptime
   • p95 latency < 500ms
   • Zero critical security incidents
+  • 100% of introductions with auditable double opt-in trail
+  • 0 unauthorized outbound intro messages
 ```
 
 ---
@@ -2668,7 +2761,7 @@ How to Scale:
 ```
 v2.0: Employer Tools
   • Clearview role definition
-  • Double opt-in protocol
+  • Full employer workflow for double opt-in protocol
   • Employer dashboard
 
 v3.0: Advanced Matching
