@@ -935,6 +935,54 @@ Read model lag is monitored via the difference between the latest event timestam
 - Refresh cadence: event-triggered on write + hourly recalibration backfill.
 - **Dimension configuration:** OpenAI `text-embedding-3-large` defaults to 3072 dimensions. All API calls MUST specify `dimensions=1536` to match the `vector(1536)` column type in PostgreSQL. This is enforced in the AI gateway embedding adapter configuration, not per-callsite. Changing the dimension requires a coordinated migration of all vector columns and indexes.
 
+#### 4.3.1 Encrypt-then-Store Pipeline
+
+Embedding generation requires plaintext input, but PII must be encrypted before it reaches the database. The following pipeline resolves this constraint by keeping plaintext strictly in worker memory and never persisting it unencrypted to disk. See §5.3.1 for the corresponding security controls.
+
+```
+1. RECEIVE — Plaintext PII arrives at the backend worker over TLS 1.3.
+   The raw text (e.g., experience narrative, STAR fields) is held
+   exclusively in worker process memory.
+
+2. EMBED  — The worker sends the plaintext to the AI Gateway, which
+   calls the configured embedding provider (OpenAI text-embedding-3-large,
+   dimensions=1536). The AI Gateway returns the float[] vector embedding.
+
+3. ENCRYPT — The worker encrypts the raw plaintext using application-level
+   AES-256-GCM with a per-field data encryption key (DEK) envelope
+   managed by AWS KMS (see §5.3 Key Management). After encryption, the
+   worker zeroizes the plaintext buffer in memory.
+
+4. WRITE  — The worker writes the AES-256-GCM ciphertext AND the
+   plaintext float[] vector embedding to PostgreSQL in a single
+   atomic transaction. Both columns are committed or neither is.
+```
+
+```
+Worker Memory Timeline
+──────────────────────────────────────────────────────────────
+ TLS in ──► [plaintext in RAM] ──► AI Gateway (embed)
+                 │                        │
+                 │◄── float[] ────────────┘
+                 │
+            AES-256-GCM encrypt
+                 │
+                 ├── ciphertext ──┐
+                 │                ├──► BEGIN TXN
+                 └── float[]  ───┘       INSERT ciphertext + vector
+                                      COMMIT TXN
+            zeroize plaintext
+──────────────────────────────────────────────────────────────
+ Plaintext NEVER written to disk or database.
+```
+
+#### 4.3.2 Vector Embedding Security Classification
+
+Vector embeddings are **lossy, irreversible transformations** — not reversible encodings of the source text. A 1536-dimensional float array is a mathematical projection into a semantic concept space; it cannot be decoded back into the original PII narrative. This property has two implications:
+
+1. **Safe for unencrypted storage:** Vector columns (`embedding vector(1536)`) are stored as plaintext floats so that pgvector can perform ANN index scans (`ivfflat`, `hnsw`) without decryption overhead. This is acceptable because the vectors do not constitute PII.
+2. **Deletion still required:** Although vectors are non-reversible, they are derived from candidate data and are deleted on account deletion (see §5.6) to honor the data dignity principle and prevent any future advances in inversion attacks from posing a risk.
+
 ### 4.4 Model Governance
 
 #### Versioning and Release Controls
@@ -1171,7 +1219,10 @@ At Rest:
   • PostgreSQL (RDS): encryption at rest via AWS KMS (RDS-managed)
   • S3: Server-side encryption (SSE-S3)
   • Backups: AES-256 encryption
-  • PII fields: application-level AES-256-GCM before storage
+  • PII fields: application-level AES-256-GCM before storage (see §5.3.1 pipeline)
+  • Vector embeddings: stored as plaintext float arrays for pgvector index scanning.
+    Vectors are irreversible semantic projections, NOT reversible ciphers of PII.
+    See §4.3.2 for security classification rationale.
 
 In Transit:
   • TLS 1.3 for all connections
@@ -1182,6 +1233,7 @@ Key Management:
   • AWS KMS for encryption key management (customer-managed CMKs)
   • Automatic key rotation
   • Separate keys per data classification tier
+  • Per-field data encryption keys (DEKs) envelope-encrypted under CMKs
 
 Auth:
   • OAuth 2.0 with short-lived JWT (RS256, 15-min access, 7-day refresh)
@@ -1196,7 +1248,50 @@ Token Revocation:
   • Account deletion and admin removal events trigger immediate blocklist insertion
 ```
 
-#### 5.3.1 PII Field Classification
+#### 5.3.1 Cryptographic Pipeline Sequence (PII + Embedding)
+
+Raw PII (experience narratives, STAR fields, etc.) must be encrypted at the application level before database persistence. However, vector embeddings require plaintext input to produce meaningful semantic representations. The following pipeline resolves this constraint. See §4.3.1 for the embedding-perspective description.
+
+**Invariant:** Plaintext PII is NEVER written to disk, database, or any persistent store. It exists only in worker process memory for the minimum duration required to generate the embedding and encrypt.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  BACKEND WORKER (process memory only — no disk, no swap-to-disk)│
+│                                                                 │
+│  Step 1: RECEIVE                                                │
+│    Client ──TLS 1.3──► Worker receives plaintext PII            │
+│                                                                 │
+│  Step 2: EMBED                                                  │
+│    Worker ──TLS──► AI Gateway ──► Embedding Provider             │
+│    Worker ◄── float[1536] vector embedding returned              │
+│    (Plaintext still held in memory for encryption)              │
+│                                                                 │
+│  Step 3: ENCRYPT                                                │
+│    Worker encrypts plaintext → AES-256-GCM ciphertext           │
+│    DEK sourced from AWS KMS envelope encryption                 │
+│    Plaintext buffer zeroized immediately after encryption        │
+│                                                                 │
+│  Step 4: ATOMIC WRITE                                           │
+│    BEGIN TRANSACTION                                             │
+│      INSERT ciphertext  → experiences.raw_description (etc.)    │
+│      INSERT float[]     → experiences.embedding                  │
+│    COMMIT                                                        │
+│    (Both written together or neither — no partial state)        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Security properties of this pipeline:**
+
+| Property | Guarantee |
+|---|---|
+| Plaintext at rest | NEVER — PII is AES-256-GCM encrypted before any database write |
+| Plaintext in transit | Protected by TLS 1.3 (client→worker) and TLS (worker→AI Gateway) |
+| Plaintext in memory | Held only for the duration of embedding generation + encryption; zeroized immediately after |
+| Vector at rest | Stored as plaintext floats — vectors are lossy, irreversible projections into semantic concept space and cannot be decoded back into source PII (see §4.3.2) |
+| Atomicity | Ciphertext and vector are committed in a single PostgreSQL transaction — no window where one exists without the other |
+| Key management | Per-field DEKs envelope-encrypted under AWS KMS CMKs; automatic rotation; separate keys per data classification tier |
+
+#### 5.3.2 PII Field Classification
 
 | Table | Field | Classification | Encryption | Retention |
 |---|---|---|---|---|
