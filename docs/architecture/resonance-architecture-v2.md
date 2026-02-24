@@ -1,6 +1,6 @@
 # Resonance — Full System Architecture Plan
 
-**Version:** 2.0
+**Version:** 2.1
 **Date:** February 24, 2026
 **Status:** Draft — Full Product Scope (Execution-Ready)
 
@@ -205,7 +205,7 @@ IntroductionState
 | `ConsentStatus` | `granted`, `revoked`, `expired` | Lifecycle and policy checks |
 | `ReasonCode` | `candidate_passed`, `employer_passed`, `policy_denied_missing_consent`, `policy_denied_guardrail`, `moderation_quarantined`, `system_timeout` | Auditable terminal outcomes |
 | `PolicyDecision` | `allow`, `deny` | Policy engine response contract |
-| `IntroState` | `discovered`, `candidate_interested`, `candidate_passed`, `employer_interested`, `employer_passed`, `introduced`, `closed` | Introduction state machine |
+| `IntroState` | `discovered`, `candidate_interested`, `candidate_saved`, `candidate_passed`, `employer_interested`, `employer_saved`, `employer_passed`, `both_interested`, `candidate_interested_employer_saved`, `employer_interested_candidate_saved`, `introduced`, `closed` | Introduction state machine |
 | `ConfidenceBucket` | `Strong`, `Promising`, `Stretch`, `Weak` | Ranking + UX behavior contract |
 
 ### 2.4 Database Schema (SQL)
@@ -221,7 +221,7 @@ CREATE TABLE candidates (
   last_active_at TIMESTAMP WITH TIME ZONE,
 
   profile_status VARCHAR(50) DEFAULT 'incomplete',
-  profile_completeness_score DECIMAL(3,2) DEFAULT 0.00,
+  profile_completeness_score DECIMAL(5,4) DEFAULT 0.0000, -- range: 0.0000 to 1.0000
 
   visibility VARCHAR(50) DEFAULT 'matches_only',
   allow_contact BOOLEAN DEFAULT false,
@@ -264,7 +264,7 @@ CREATE TABLE experiences (
   skills_demonstrated JSONB DEFAULT '[]',
   themes JSONB DEFAULT '[]',
   context JSONB DEFAULT '{}',
-  evidence_strength DECIMAL(3,2) DEFAULT 0.00,
+  evidence_strength DECIMAL(5,4) DEFAULT 0.0000, -- range: 0.0000 to 1.0000
 
   source VARCHAR(50), -- 'conversation', 'import', 'manual'
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -278,7 +278,7 @@ CREATE INDEX idx_experiences_embedding ON experiences USING ivfflat (embedding v
 
 CREATE TABLE candidate_preferences (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  candidate_id UUID NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+  candidate_id UUID NOT NULL UNIQUE REFERENCES candidates(id) ON DELETE CASCADE, -- 1:1 with candidate
 
   role_types JSONB DEFAULT '[]',
   seniority_levels JSONB DEFAULT '[]',
@@ -307,7 +307,7 @@ CREATE TABLE candidate_preferences (
 
 CREATE TABLE growth_map (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  candidate_id UUID NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+  candidate_id UUID NOT NULL UNIQUE REFERENCES candidates(id) ON DELETE CASCADE, -- 1:1 with candidate
 
   skills_in_progress JSONB DEFAULT '[]',
   identified_growth_edges JSONB DEFAULT '[]',
@@ -367,7 +367,8 @@ CREATE TABLE employer_users (
   role VARCHAR(100), -- 'admin', 'recruiter', 'hiring_manager'
   permissions JSONB DEFAULT '{}',
 
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE roles (
@@ -459,6 +460,11 @@ CREATE TABLE matches (
   role_id UUID REFERENCES roles(id),
   job_posting_id UUID REFERENCES job_postings(id),
 
+  -- A match must reference at least one of role_id or job_posting_id.
+  -- role_id: Clearview-created (Tier 1) roles with full structured data.
+  -- job_posting_id: Aggregated (Tier 2-4) postings. Both set when a posting is claimed by an employer.
+  CONSTRAINT match_has_target CHECK (role_id IS NOT NULL OR job_posting_id IS NOT NULL),
+
   overall_score DECIMAL(5,2),
   capability_alignment_score DECIMAL(5,2),
   growth_trajectory_score DECIMAL(5,2),
@@ -485,6 +491,11 @@ CREATE TABLE matches (
   outcome VARCHAR(50), -- 'no_response', 'interview', 'offer', 'hired', 'rejected'
   outcome_at TIMESTAMP WITH TIME ZONE,
 
+  -- Match staleness tracking: matches are re-evaluated on profile/role changes.
+  -- Stale matches are suppressed from feeds until rescored.
+  last_scored_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  stale BOOLEAN DEFAULT false,
+
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -492,6 +503,7 @@ CREATE TABLE matches (
 CREATE INDEX idx_matches_candidate ON matches(candidate_id);
 CREATE INDEX idx_matches_role ON matches(role_id);
 CREATE INDEX idx_matches_score ON matches(overall_score DESC);
+CREATE INDEX idx_matches_stale ON matches(stale) WHERE stale = true;
 
 CREATE TABLE match_feedback (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -553,11 +565,27 @@ CREATE TABLE training_eligibility_snapshots (
   generated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Governance table indexes for query patterns in §7.1
+CREATE INDEX idx_consent_records_lookup ON consent_records(subject_type, subject_id, consent_type);
+CREATE INDEX idx_consent_records_status ON consent_records(status);
+CREATE INDEX idx_audit_events_category ON audit_events(category, subject_id);
+CREATE INDEX idx_audit_events_timestamp ON audit_events(timestamp);
+CREATE INDEX idx_policy_decision_logs_policy ON policy_decision_logs(policy_name, evaluated_at);
+CREATE INDEX idx_training_eligibility_candidate ON training_eligibility_snapshots(candidate_id, effective_from);
+
 -- Row-level security for multi-tenancy
 ALTER TABLE roles ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY employer_isolation_policy ON roles
   USING (employer_id = current_setting('app.current_employer_id')::UUID);
+
+-- IMPORTANT: The `app.current_employer_id` session variable MUST be set by the
+-- request-scoped database middleware before any query execution. The middleware
+-- extracts the employer_id from the authenticated JWT claims and calls:
+--   SET LOCAL app.current_employer_id = '<employer_uuid>';
+-- This is wrapped in a transaction so the setting is scoped to the request.
+-- Integration tests MUST verify that queries without the session variable set
+-- return zero rows (not an error), preventing silent data leaks.
 ```
 
 ### 2.5 Data Retention Policy
@@ -799,13 +827,44 @@ GovernanceDomain
 
 #### State Transitions
 
+**Candidate-first flow** (candidate expresses interest before employer):
+
 | Current State | Action | Next State | Enforcement |
 |---|---|---|---|
 | `discovered` | Candidate selects `interested` | `candidate_interested` | Candidate auth + match visibility check |
 | `discovered` | Candidate selects `passed` | `candidate_passed` (terminal) | Record `reason_code=candidate_passed` |
-| `candidate_interested` | Employer selects `interested` | `employer_interested` | Employer auth + role ownership check |
+| `discovered` | Candidate selects `saved` | `candidate_saved` | Candidate auth; saved is a holding state |
+| `candidate_saved` | Candidate selects `interested` | `candidate_interested` | Candidate auth |
+| `candidate_saved` | Candidate selects `passed` | `candidate_passed` (terminal) | Record `reason_code=candidate_passed` |
+| `candidate_interested` | Employer selects `interested` | `both_interested` | Employer auth + role ownership check |
 | `candidate_interested` | Employer selects `passed` | `employer_passed` (terminal) | Record `reason_code=employer_passed` |
-| `employer_interested` | `POST /internal/introductions/:matchId/attempt` | `introduced` | Policy engine allow + consent checks |
+| `candidate_interested` | Employer selects `saved` | `candidate_interested_employer_saved` | Employer auth; employer decision pending |
+
+**Employer-first flow** (employer expresses interest before candidate):
+
+| Current State | Action | Next State | Enforcement |
+|---|---|---|---|
+| `discovered` | Employer selects `interested` | `employer_interested` | Employer auth + role ownership check |
+| `discovered` | Employer selects `passed` | `employer_passed` (terminal) | Record `reason_code=employer_passed` |
+| `discovered` | Employer selects `saved` | `employer_saved` | Employer auth; saved is a holding state |
+| `employer_saved` | Employer selects `interested` | `employer_interested` | Employer auth |
+| `employer_saved` | Employer selects `passed` | `employer_passed` (terminal) | Record `reason_code=employer_passed` |
+| `employer_interested` | Candidate selects `interested` | `both_interested` | Candidate auth + match visibility check |
+| `employer_interested` | Candidate selects `passed` | `candidate_passed` (terminal) | Record `reason_code=candidate_passed` |
+| `employer_interested` | Candidate selects `saved` | `employer_interested_candidate_saved` | Candidate auth; candidate decision pending |
+
+**Convergence flow** (both sides have expressed interest):
+
+| Current State | Action | Next State | Enforcement |
+|---|---|---|---|
+| `both_interested` | `POST /internal/introductions/:matchId/attempt` | `introduced` | Policy engine allow + consent checks |
+| `candidate_interested_employer_saved` | Employer selects `interested` | `both_interested` | Employer auth |
+| `employer_interested_candidate_saved` | Candidate selects `interested` | `both_interested` | Candidate auth |
+
+**Common transitions** (apply to any non-terminal state):
+
+| Current State | Action | Next State | Enforcement |
+|---|---|---|---|
 | any non-terminal | SLA timeout/retry exhausted | `closed` (terminal) | Record `reason_code=system_timeout` |
 | any non-terminal | Policy denial | unchanged or `closed` | Record policy denial reason code |
 
@@ -829,6 +888,19 @@ Match feeds and explainability views are served from denormalized read models op
 | `introduction_timeline` | `match.introduction.created`, state transitions | Both UIs + Ops Console | Introduction progress and history |
 
 Read model projections are rebuilt from events on schema change. Write path remains the source of truth.
+
+#### 3.7.1 Eventual Consistency SLA and UX Strategy
+
+Read models are eventually consistent with the write path. Target propagation latency: **< 5 seconds** for decision events, **< 5 minutes** for scoring events.
+
+| Scenario | UX Handling |
+|---|---|
+| Candidate expresses interest | Optimistic UI update immediately; read model catches up async. If projection fails, client polls write path as fallback. |
+| Employer sees stale match feed | Match feed shows "last updated" timestamp. Pull-to-refresh triggers read model refresh. |
+| Introduction created but not yet in timeline | Introduction confirmation shown from write response; timeline projection follows within seconds. |
+| Read model projection failure | Degraded mode: UI falls back to direct query against write path (slower but consistent). Alert emitted for ops. |
+
+Read model lag is monitored via the difference between the latest event timestamp and the latest projected timestamp. Lag exceeding 30 seconds triggers a P2 alert; lag exceeding 5 minutes triggers a P1 alert.
 
 ---
 
@@ -861,6 +933,7 @@ Read model projections are rebuilt from events on schema change. Write path rema
 - Store: pgvector in PostgreSQL at launch.
 - Retrieval mode: ANN for candidate-role recall, followed by deterministic rerank.
 - Refresh cadence: event-triggered on write + hourly recalibration backfill.
+- **Dimension configuration:** OpenAI `text-embedding-3-large` defaults to 3072 dimensions. All API calls MUST specify `dimensions=1536` to match the `vector(1536)` column type in PostgreSQL. This is enforced in the AI gateway embedding adapter configuration, not per-callsite. Changing the dimension requires a coordinated migration of all vector columns and indexes.
 
 ### 4.4 Model Governance
 
@@ -1114,7 +1187,28 @@ Auth:
   • OAuth 2.0 with short-lived JWT (RS256, 15-min access, 7-day refresh)
   • Scoped service tokens for internal APIs
   • HttpOnly, Secure cookies for token storage
+
+Token Revocation:
+  • Redis-backed token blocklist for immediate revocation (e.g., admin removal, account deletion)
+  • Blocklist entries expire after access token TTL (15 min) — no unbounded growth
+  • Auth middleware checks blocklist on every request before JWT signature validation
+  • Refresh token revocation via database deletion (immediate effect on next refresh)
+  • Account deletion and admin removal events trigger immediate blocklist insertion
 ```
+
+#### 5.3.1 PII Field Classification
+
+| Table | Field | Classification | Encryption | Retention |
+|---|---|---|---|---|
+| `candidates` | `email` | PII | App-level AES-256-GCM | Account lifetime |
+| `experiences` | `raw_description`, `situation`, `task`, `action`, `result` | Sensitive PII | App-level AES-256-GCM | Account lifetime |
+| `experiences` | `skills_demonstrated`, `themes` | Derived data | TDE (at rest) | Account lifetime |
+| `candidate_preferences` | `min_salary_expectation`, `max_salary_expectation` | Sensitive PII | App-level AES-256-GCM | Account lifetime |
+| `employer_users` | `email` | PII | App-level AES-256-GCM | Account lifetime |
+| `matches` | `match_reasoning` | Cross-party sensitive | TDE (at rest) | 2 years |
+| `profile_documents` | `parsed_text`, `file_url` | Sensitive PII | App-level AES-256-GCM | Account lifetime |
+| `audit_events` | `metadata` | May contain PII refs | TDE (at rest) | Indefinite (compliance) |
+| `consent_records` | all fields | Compliance-critical | TDE (at rest) | Indefinite (compliance) |
 
 ### 5.4 No Demographic Signals in Matching
 
@@ -1130,7 +1224,30 @@ Auth:
 5. Revocations are honored in all future snapshots and pipeline runs.
 6. Audit queries can reconstruct who was eligible for any model training run.
 
-### 5.6 Network Security
+### 5.6 Candidate Account Deletion Cascade
+
+When a candidate deletes their account (`DELETE /candidate/account`), the following data operations execute:
+
+| Table | Action | Rationale |
+|---|---|---|
+| `candidates` | Hard delete (CASCADE triggers child deletes) | PII removal |
+| `experiences` | Hard delete (via CASCADE) | PII removal — raw narratives, STAR data |
+| `candidate_preferences` | Hard delete (via CASCADE) | PII removal — salary data |
+| `growth_map` | Hard delete (via CASCADE) | PII removal |
+| `profile_documents` | Hard delete + S3 object deletion | PII removal — uploaded files |
+| `candidate_consent_events` | Anonymize `candidate_id` → hashed pseudonym, retain events | Compliance — consent history must be reconstructable |
+| `matches` | Set `candidate_id` to anonymized pseudonym, null PII-adjacent fields (`match_reasoning`), retain scores | Aggregate analytics — outcome data retained anonymized |
+| `match_feedback` | Retain with anonymized match reference | Analytics — feedback used for model calibration |
+| `consent_records` | Anonymize `subject_id` → hashed pseudonym, retain | Compliance — indefinite retention requirement |
+| `audit_events` | Anonymize `subject_id` → hashed pseudonym, retain | Compliance — indefinite retention requirement |
+| `training_eligibility_snapshots` | Anonymize `candidate_id`, retain | Compliance — training lineage audit |
+| Vector embeddings (pgvector) | Hard delete from `experiences` and any aggregate profile vectors | Embeddings derived from PII |
+| Redis cache entries | Invalidate all keys for candidate | Cache coherence |
+| Token blocklist | Add all active tokens to blocklist | Prevent post-deletion access |
+
+The anonymized pseudonym is a one-way hash (`SHA-256(candidate_id + deletion_salt)`) that allows cross-table joins for analytics without reversibility. The `deletion_salt` is stored in AWS KMS and rotated annually.
+
+### 5.7 Network Security
 
 ```
 Network Architecture:
@@ -1152,7 +1269,7 @@ Security Monitoring:
   • Incident response runbooks with PagerDuty integration
 ```
 
-### 5.7 Compliance Baseline
+### 5.8 Compliance Baseline
 
 | Control Area | Launch Baseline | Evidence Artifact |
 |---|---|---|
@@ -1211,13 +1328,13 @@ Security Monitoring:
 | External API style | REST-first | GraphQL BFF (deferred) | Multi-client data-shape pressure |
 | Internal integration | Versioned async events | Synchronous internal RPC additions | Required for strict consistency edge cases |
 | LLM strategy | AI gateway with Claude primary, OpenAI fallback | Additional providers | Cost/reliability or policy requirements |
-| Frontend | Next.js + Tailwind CSS + Radix UI | Native mobile apps | Product milestone after Phase 2 |
+| Frontend | Next.js 15+ + Tailwind CSS + Radix UI | Native mobile apps | Product milestone after Phase 2 |
 | Search | PostgreSQL full-text + pg_trgm | Elasticsearch | Query complexity or volume exceeds PG capabilities |
 
 ### 6.3 Frontend Stack
 
 ```
-Framework: Next.js 14+ (App Router)
+Framework: Next.js 15+ (App Router, minimum 15.1 for stable Turbopack)
 Language: TypeScript 5+
 Styling: Tailwind CSS
 Components: Radix UI (headless, accessible)
@@ -1225,7 +1342,7 @@ Animations: Framer Motion
 State: React Query (server state) + Zustand (client state)
 Forms: React Hook Form + Zod (validation)
 Testing: Vitest + React Testing Library + Playwright (E2E)
-Build: Turbopack (dev) / Webpack (production)
+Build: Turbopack (dev, requires Next.js 15.1+) / Webpack (production)
 ```
 
 Rationale:
@@ -1247,11 +1364,47 @@ Cadence policy:
 - Hourly backfill for missed events, score recalibration, and stuck-state recovery.
 - Stuck workflow watchdog retries idempotent jobs and emits compensation events.
 
+Match staleness policy:
+- When a candidate profile or role is updated, all associated matches are marked `stale=true`.
+- Stale matches are suppressed from match feeds until rescored by the next matching cycle.
+- Matches older than 30 days without interaction from either side are auto-archived.
+- When a match reaches terminal state (`hired`, `candidate_passed`, `employer_passed`, `closed`), it is excluded from active feeds but retained for analytics.
+- Hourly backfill rescores all stale matches and clears the stale flag.
+
 Data quality SLAs:
 - Ingestion freshness: Tier-2 postings indexed within 4 hours of API availability.
 - Tier-3 career page postings indexed within 24 hours of publication.
 - Embedding staleness: no profile embedding older than 1 hour after write event.
 - Graph freshness: candidate/employer read models updated within 5 minutes of source event.
+
+Dead letter queue (DLQ) strategy:
+- All BullMQ queues are configured with a max retry count of 3 with exponential backoff.
+- Failed jobs after retries are moved to a per-queue DLQ (e.g., `matching-dlq`, `consent-dlq`).
+- **Consent-related DLQ jobs are P0 alerts** — missed consent events have compliance implications.
+- DLQ dashboard in the Internal Operations Console surfaces failed jobs for manual triage.
+- DLQ jobs older than 7 days without resolution trigger escalation alerts.
+- Idempotent job design ensures safe replay from DLQ without side effects.
+
+#### 6.4.1 Consent Revocation Cascade
+
+When a candidate revokes all consent or deletes their account, the following cascade is executed as a transactional workflow:
+
+```
+1. Mark all active matches as `closed` with reason_code=`consent_revoked`.
+2. Cancel any pending introduction attempts (transition to `closed`).
+3. Suppress candidate from all employer match feeds (CQRS read model update).
+4. Mark candidate embeddings for deletion from vector store.
+5. If model_training consent revoked:
+   a. Update TrainingEligibilitySnapshot to eligible=false.
+   b. Flag candidate records for exclusion from next training pipeline run.
+6. If full account deletion:
+   a. Purge all PII (raw narratives, email, documents, salary data).
+   b. Retain anonymized match outcome records for aggregate analytics.
+   c. Retain consent event history (compliance requirement — anonymized subject_id).
+7. Emit `candidate.consent.cascade.completed` audit event.
+```
+
+Failure at any step halts the cascade and routes to the consent DLQ for manual resolution. Partial cascades are tracked in the audit log for compliance investigation.
 
 ### 6.5 Architecture Style Decision
 
@@ -1356,7 +1509,26 @@ Key Dashboards:
   • Cost tracking (AWS spend, LLM API costs)
 ```
 
-### 6.9 CI/CD Pipeline
+### 6.9 Service Level Objectives (SLOs)
+
+| Category | Metric | Target | Measurement |
+|---|---|---|---|
+| **Availability** | API uptime | 99.9% (8.7h downtime/year) | Synthetic health checks + ALB metrics |
+| **Latency — API** | p50 / p95 / p99 response time | 100ms / 500ms / 1s | Per-endpoint Prometheus histograms |
+| **Latency — Matching** | Match scoring pipeline (end-to-end) | < 30s from trigger event to read model update | Event timestamp delta |
+| **Latency — Conversation** | WebSocket AI response time | p95 < 3s first token | AI gateway instrumentation |
+| **Latency — Search** | Vector similarity search | p95 < 200ms | pgvector query timing |
+| **Throughput** | Concurrent WebSocket connections | 1000 per instance | Connection pool metrics |
+| **Data freshness** | Read model projection lag | < 5 min (P2 alert at 30s, P1 at 5 min) | Projection lag monitor |
+| **Data freshness** | Embedding staleness | < 1 hour after write event | Embedding age monitor |
+| **Error rate** | 5xx error rate | < 0.1% of requests | ALB + application error logs |
+| **Guardrail** | Unauthorized introduction attempts | 0 (zero tolerance) | Policy decision log audit |
+| **Queue health** | BullMQ job failure rate | < 0.5% | Queue metrics dashboard |
+| **Queue health** | DLQ depth | < 50 jobs (P2 alert at 20, P1 at 50) | DLQ monitor |
+
+Error budgets are calculated monthly. Burning > 50% of the monthly error budget in a single week triggers an incident review.
+
+### 6.10 CI/CD Pipeline
 
 ```
 Platform: GitHub Actions
@@ -1388,7 +1560,7 @@ Model Deployment (separate pipeline):
   • Rollback on fairness or calibration threshold breach
 ```
 
-### 6.10 Disaster Recovery
+### 6.11 Disaster Recovery
 
 ```
 Backup Strategy:
@@ -1620,6 +1792,14 @@ Caching:
   • GET requests (5 min TTL)
   • Static content (1 hour TTL)
   • Invalidation on write events
+
+WebSocket Rate Limiting (candidate conversation endpoint):
+  • Max 30 messages/minute per authenticated user
+  • Max 5 concurrent WebSocket connections per user
+  • Per-message token budget: 4000 input tokens (estimated), hard-capped at AI gateway
+  • Idle connection timeout: 30 minutes
+  • Rate limit exceeded → 429 frame with retry-after header, connection preserved
+  • Abuse detection: sustained high-frequency messaging triggers temporary cooldown + alert
 ```
 
 ---
@@ -1694,6 +1874,21 @@ This boundary is enforced at service and policy layers, never only in client cod
 ### 10.6 MVP Matching Algorithm (Phase 2 Reference Implementation)
 
 ```python
+# Default match weights — loaded from environment/config, not hardcoded.
+# Tunable per-environment to support A/B testing and iterative calibration.
+DEFAULT_MATCH_WEIGHTS = {
+    'semantic': 0.4,
+    'skills': 0.3,
+    'location': 0.2,
+    'salary': 0.1,
+}
+
+MINIMUM_MATCH_THRESHOLD = 0.5
+
+def get_match_weights() -> dict:
+    """Load match weights from config store. Falls back to defaults."""
+    return config.get('matching.weights', DEFAULT_MATCH_WEIGHTS)
+
 def calculate_match_score(candidate, job_posting):
     """
     Phase 2 matching: semantic similarity + skill overlap + practical filters.
@@ -1722,8 +1917,8 @@ def calculate_match_score(candidate, job_posting):
     else:
         scores['salary'] = 0.7  # Neutral if unknown
 
-    # Weighted average
-    weights = {'semantic': 0.4, 'skills': 0.3, 'location': 0.2, 'salary': 0.1}
+    # Weighted average (weights loaded from config, not hardcoded)
+    weights = get_match_weights()
     overall_score = sum(scores[key] * weights[key] for key in scores)
 
     return overall_score
@@ -1750,7 +1945,7 @@ def get_matches_for_candidate(candidate_id, limit=20):
     scored_matches = []
     for job in similar_jobs:
         score = calculate_match_score(candidate, job)
-        if score > 0.5:  # Minimum threshold
+        if score > MINIMUM_MATCH_THRESHOLD:
             scored_matches.append({
                 'job_posting_id': job.id,
                 'score': score,
