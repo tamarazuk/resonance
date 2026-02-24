@@ -1168,7 +1168,7 @@ Performance Optimization:
 
 ```
 At Rest:
-  • PostgreSQL: TDE (Transparent Data Encryption) via RDS
+  • PostgreSQL (RDS): encryption at rest via AWS KMS (RDS-managed)
   • S3: Server-side encryption (SSE-S3)
   • Backups: AES-256 encryption
   • PII fields: application-level AES-256-GCM before storage
@@ -1321,20 +1321,20 @@ Security Monitoring:
 | Product APIs | TypeScript + Node.js (Fastify) | None in launch path | N/A |
 | ML/Inference services | Python (FastAPI) behind internal APIs | None in launch path | N/A |
 | Architecture style | Modular monolith | Service extraction | Trigger thresholds in 6.5 |
-| Primary DB + vector | PostgreSQL 15+ with pgvector | Pinecone behind repository interface | Recall/latency exceeds SLO at validated load |
-| Cache | Redis 7+ (cluster mode) | None in launch path | N/A |
+| Primary DB + vector | PostgreSQL 17+ with pgvector | Pinecone behind repository interface | Recall/latency exceeds SLO at validated load |
+| Cache | Redis 7.2+ (cluster mode; Redis 8 where supported) | None in launch path | N/A |
 | Queue/workflows | Redis + BullMQ | Managed queue worker tier | Operational burden or throughput breach |
 | Hosting | AWS (us-east-1 primary) | None in launch path | N/A |
 | External API style | REST-first | GraphQL BFF (deferred) | Multi-client data-shape pressure |
 | Internal integration | Versioned async events | Synchronous internal RPC additions | Required for strict consistency edge cases |
 | LLM strategy | AI gateway with Claude primary, OpenAI fallback | Additional providers | Cost/reliability or policy requirements |
-| Frontend | Next.js 15+ + Tailwind CSS + Radix UI | Native mobile apps | Product milestone after Phase 2 |
+| Frontend | Next.js 16+ + Tailwind CSS + Radix UI | Native mobile apps | Product milestone after Phase 2 |
 | Search | PostgreSQL full-text + pg_trgm | Elasticsearch | Query complexity or volume exceeds PG capabilities |
 
 ### 6.3 Frontend Stack
 
 ```
-Framework: Next.js 15+ (App Router, minimum 15.1 for stable Turbopack)
+Framework: Next.js 16+ (App Router; Active LTS as of 2026-02)
 Language: TypeScript 5+
 Styling: Tailwind CSS
 Components: Radix UI (headless, accessible)
@@ -1342,7 +1342,7 @@ Animations: Framer Motion
 State: React Query (server state) + Zustand (client state)
 Forms: React Hook Form + Zod (validation)
 Testing: Vitest + React Testing Library + Playwright (E2E)
-Build: Turbopack (dev, requires Next.js 15.1+) / Webpack (production)
+Build: Turbopack (dev + production default in Next.js 16) / Webpack (fallback for incompatible plugins)
 ```
 
 Rationale:
@@ -2038,8 +2038,8 @@ Commit Messages (Conventional Commits):
 |---|---|
 | RD-001 | Product APIs use TypeScript/Node.js (Fastify); Python reserved for ML/inference services |
 | RD-002 | Modular monolith is launch architecture; no premature microservice split |
-| RD-003 | PostgreSQL 15+ with pgvector is primary operational/vector store at launch |
-| RD-004 | Redis 7+ with BullMQ is default queue and workflow layer |
+| RD-003 | PostgreSQL 17+ with pgvector is primary operational/vector store at launch |
+| RD-004 | Redis 7.2+ with BullMQ is default queue/workflow layer (Redis 8 where supported) |
 | RD-005 | AWS (us-east-1 primary, us-west-2 DR) is launch hosting platform |
 | RD-006 | REST-first public APIs; async events for internal domain integration |
 | RD-007 | AI gateway abstraction with Claude primary and OpenAI fallback |
@@ -2102,10 +2102,10 @@ Commit Messages (Conventional Commits):
 |---|---|---|---|
 | Primary Language | TypeScript | Type safety, full-stack consistency, ecosystem breadth | 2026-02 |
 | ML Language | Python | Best ML/AI ecosystem, FastAPI for serving | 2026-02 |
-| Database | PostgreSQL 15+ | ACID, JSON, pgvector, reliability | 2026-02 |
+| Database | PostgreSQL 17+ | ACID, JSON, pgvector, reliability | 2026-02 |
 | Cloud Provider | AWS | Maturity, managed services, team familiarity | 2026-02 |
 | Web Framework | Next.js | SSR, App Router, API routes, React ecosystem | 2026-02 |
-| API Framework | Fastify | Performance (2x Express), TypeScript-first | 2026-02 |
+| API Framework | Fastify | High throughput, low overhead, TypeScript-first | 2026-02 |
 | LLM Primary | Claude (Anthropic) | Long-context, structured output quality, safety | 2026-02 |
 | Embedding Provider | OpenAI text-embedding-3-large | Quality, cost, provider abstracted | 2026-02 |
 | UI Components | Radix UI + Tailwind CSS | Accessible, headless, customizable | 2026-02 |
