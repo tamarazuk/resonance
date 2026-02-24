@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@resonance/ui/*": ["../../packages/ui/src/*"]
     }
   },
   "include": [
