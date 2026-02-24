@@ -191,61 +191,80 @@ pnpm --filter @resonance/db add -D drizzle-kit @resonance/typescript-config@work
 
 Optional testing dep: `@electric-sql/pglite`
 
-### Step 2.5 — `packages/ui`
+### Step 2.5 — `packages/ui` + Next.js app scaffold (via shadcn)
 
-Shared React component library using Radix UI + Tailwind.
+Shared React component library using [shadcn/ui](https://ui.shadcn.com) with [Base UI](https://base-ui.com) primitives + Tailwind v4. shadcn copies components into your codebase — you own the code and can customize freely.
 
-```sh
-mkdir -p packages/ui/src
-```
+`shadcn init` configures both `packages/ui` and the app workspace in one pass, so this step also scaffolds the Next.js app.
 
-Create `packages/ui/package.json` with `"name": "@resonance/ui"`, then install deps:
-```sh
-pnpm --filter @resonance/ui add react react-dom \
-  @radix-ui/react-dialog @radix-ui/react-dropdown-menu \
-  @radix-ui/react-toast @radix-ui/react-tabs @radix-ui/react-tooltip \
-  class-variance-authority clsx tailwind-merge
-pnpm --filter @resonance/ui add -D @resonance/typescript-config@workspace:* tailwindcss
-```
-
-**Contents:**
-- Shared CSS theme file (`theme.css`) exporting design tokens via Tailwind v4's `@theme` directive (color tokens, typography scale, spacing, border-radius). Apps import this file in their own CSS with `@import "@resonance/ui/theme.css"`.
-- Base components from MVP Track C Day 1:
-  - `Button` (variants: primary, secondary, ghost, destructive)
-  - `Input`, `Textarea` (with label, error, helper text)
-  - `Card` (header, content, footer)
-  - `Badge` (default, success, warning, error)
-  - `EmptyState`, `LoadingSpinner`, `Skeleton`
-  - `Toast` (via Radix Toast)
-
----
-
-## Part 3: Steadyhand App
-
-### Step 3.1 — Next.js app scaffold
-
-1. Create the app:
+1. Scaffold the Next.js app:
    ```sh
    pnpm create next-app@latest apps/steadyhand \
      --app --typescript --tailwind --no-src-dir \
      --import-alias "@/*"
    ```
-   This scaffolds Next.js 16 with App Router, Turbopack (default), and Tailwind v4.
+   This creates Next.js 16 with App Router, Turbopack (default), and Tailwind v4.
 
-2. Add workspace dependencies:
+2. From the **monorepo root**, initialize shadcn:
+   ```sh
+   pnpm dlx shadcn@latest init
+   ```
+   When prompted:
+   - Select **"Next.js (Monorepo)"**
+   - Choose **Base UI** as the primitive library
+   - Tailwind v4 CSS-first config (no `tailwind.config.ts`)
+
+   This creates:
+   - `packages/ui/` — shared components, utils (`cn()`), `components.json`
+   - `apps/steadyhand/components.json` — app-level config pointing to `@resonance/ui`
+
+3. Add the shared typescript-config dev dependency to the UI package:
+   ```sh
+   pnpm --filter @resonance/ui add -D @resonance/typescript-config@workspace:*
+   ```
+
+4. Add remaining workspace dependencies to the app:
    ```sh
    pnpm --filter steadyhand add \
      @resonance/db@workspace:* \
-     @resonance/types@workspace:* \
-     @resonance/ui@workspace:*
+     @resonance/types@workspace:*
    ```
+   (`@resonance/ui` is already linked by `shadcn init`)
 
-3. In the app's global CSS, import Tailwind and the shared theme:
-   ```css
-   @import "tailwindcss";
-   @import "@resonance/ui/theme.css";
+5. Add Base UI components needed for MVP Day 1:
+   ```sh
+   cd apps/steadyhand
+   pnpm dlx shadcn@latest add button input textarea card badge \
+     dialog tabs tooltip separator
    ```
-   Add `@source` directives if needed to scan `@resonance/ui` package for class detection.
+   The CLI installs primitives (Base UI-backed) into `packages/ui` and updates imports automatically.
+
+6. Custom components to create manually in `packages/ui/src/`:
+   - `EmptyState`, `LoadingSpinner`, `Skeleton` (no shadcn equivalent — write by hand)
+   - `Toast` — add `sonner` for toast notifications:
+     ```sh
+     pnpm dlx shadcn@latest add sonner
+     ```
+
+**Import pattern from apps:**
+```ts
+import { Button } from "@resonance/ui/components/button"
+import { cn } from "@resonance/ui/lib/utils"
+```
+
+**Both `components.json` files must have matching** `style`, `iconLibrary`, and `baseColor` values.
+
+---
+
+## Part 3: Steadyhand App
+
+> **Note:** The Next.js scaffold and shadcn init were already completed in Step 2.5. The steps below continue from there.
+
+### Step 3.1 — App-specific configuration
+
+The app was created in Step 2.5. Verify the setup:
+- `apps/steadyhand/` exists with App Router, Tailwind v4, and `components.json`
+- `@resonance/ui`, `@resonance/db`, and `@resonance/types` are in `package.json` dependencies
 
 ### Step 3.2 — Auth setup (Auth.js v5)
 
@@ -446,14 +465,13 @@ Note: `mise run` tasks wrap these for convenience (e.g., `mise run setup` does i
 | 4 | `packages/types` | Step 2 | `pnpm --filter @resonance/types add zod` |
 | 5 | Docker Compose + `.env.example` | Step 1 | `docker compose up -d` |
 | 6 | `packages/db` | Steps 2, 4, 5 | `pnpm --filter @resonance/db add drizzle-orm postgres` |
-| 7 | `packages/ui` | Steps 2, 3 | Install Radix + CVA deps |
-| 8 | `apps/steadyhand` | Steps 2, 3, 7 | `pnpm create next-app@latest apps/steadyhand ...` |
-| 9 | Auth setup | Step 8 | `pnpm --filter steadyhand add next-auth@5 bcryptjs` |
-| 10 | LLM pipeline modules (stubs) | Steps 4, 8 | `pnpm --filter steadyhand add openai ai zod` |
-| 11 | API routes (stubs) | Steps 6, 9, 10 | Create route files |
-| 12 | Page structure + layouts | Steps 7, 8 | Create page files |
-| 13 | Pre-commit hooks | Step 3 | `pnpm add -D husky lint-staged && pnpm exec husky init` |
-| 14 | Verify everything works | All | `mise run setup && pnpm dev` |
+| 7 | `apps/steadyhand` + `packages/ui` | Steps 2, 3 | `pnpm create next-app@latest ...` then `pnpm dlx shadcn@latest init` |
+| 8 | Auth setup | Step 7 | `pnpm --filter steadyhand add next-auth@5 bcryptjs` |
+| 9 | LLM pipeline modules (stubs) | Steps 4, 7 | `pnpm --filter steadyhand add openai ai zod` |
+| 10 | API routes (stubs) | Steps 6, 8, 9 | Create route files |
+| 11 | Page structure + layouts | Step 7 | Create page files |
+| 12 | Pre-commit hooks | Step 3 | `pnpm exec husky init` (already installed) |
+| 13 | Verify everything works | All | `mise run setup && pnpm dev` |
 
 ---
 
