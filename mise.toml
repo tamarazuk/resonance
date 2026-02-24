@@ -1,2 +1,55 @@
 [tools]
-node = "lts"
+node = "24"
+pnpm = "10"
+
+[env]
+_.file = ".env"
+DOCKER_COMPOSE_PROJECT_NAME = "resonance"
+
+[tasks.setup]
+description = "Install deps, start Docker, push DB schema"
+run = """
+pnpm install
+docker compose up -d
+echo "Waiting for Postgres to be ready..."
+until docker compose exec -T postgres pg_isready -U resonance > /dev/null 2>&1; do sleep 1; done
+pnpm db:push
+"""
+
+[tasks.dev]
+description = "Start Docker + dev server"
+run = """
+docker compose up -d
+pnpm dev
+"""
+
+[tasks.db]
+description = "Generate and push Drizzle migrations"
+run = """
+pnpm db:generate
+pnpm db:push
+"""
+
+[tasks."db:studio"]
+description = "Open Drizzle Studio"
+run = "pnpm --filter @resonance/db drizzle-kit studio"
+
+[tasks."db:reset"]
+description = "Drop and recreate local DB"
+run = """
+docker compose exec -T postgres psql -U resonance -d postgres -c "DROP DATABASE IF EXISTS resonance_dev;"
+docker compose exec -T postgres psql -U resonance -d postgres -c "CREATE DATABASE resonance_dev;"
+pnpm db:push
+"""
+
+[tasks.docker]
+description = "Start local infrastructure"
+run = "docker compose up -d"
+
+[tasks."docker:down"]
+description = "Stop local infrastructure"
+run = "docker compose down"
+
+[tasks."docker:clean"]
+description = "Stop infrastructure and remove volumes"
+run = "docker compose down -v"
