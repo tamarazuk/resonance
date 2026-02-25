@@ -6,6 +6,16 @@ import { ChatWindow } from "@/components/chat/ChatWindow";
 import { ExperienceCard } from "@/components/memory/ExperienceCard";
 import { ExperienceForm } from "@/components/memory/ExperienceForm";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@resonance/ui/components/alert-dialog";
+import {
   EmptyState,
   EmptyStateIcon,
   EmptyStateTitle,
@@ -24,6 +34,14 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("All");
 
+  // Edit/delete state
+  const [editingExperience, setEditingExperience] = useState<Experience | null>(
+    null,
+  );
+  const [deletingExperience, setDeletingExperience] =
+    useState<Experience | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   const fetchExperiences = useCallback(async () => {
     try {
       const res = await fetch("/api/experiences");
@@ -41,6 +59,24 @@ export default function ChatPage() {
   useEffect(() => {
     fetchExperiences();
   }, [fetchExperiences]);
+
+  async function handleDelete() {
+    if (!deletingExperience) return;
+    setDeleteLoading(true);
+    try {
+      const res = await fetch(`/api/experiences/${deletingExperience.id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setDeletingExperience(null);
+        fetchExperiences();
+      }
+    } catch {
+      // Silently fail — user can retry
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
 
   // Filter tabs — "All" plus unique categories extracted from experiences
   const filterTabs = ["All", "Leadership", "Technical", "Conflict"];
@@ -130,7 +166,12 @@ export default function ChatPage() {
             </div>
           ) : (
             experiences.map((exp) => (
-              <ExperienceCard key={exp.id} experience={exp} />
+              <ExperienceCard
+                key={exp.id}
+                experience={exp}
+                onEdit={setEditingExperience}
+                onDelete={setDeletingExperience}
+              />
             ))
           )}
         </div>
@@ -150,6 +191,47 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit experience dialog (controlled) */}
+      {editingExperience && (
+        <ExperienceForm
+          experience={editingExperience}
+          open={!!editingExperience}
+          onOpenChange={(open) => {
+            if (!open) setEditingExperience(null);
+          }}
+          onSaved={() => {
+            setEditingExperience(null);
+            fetchExperiences();
+          }}
+        />
+      )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog
+        open={!!deletingExperience}
+        onOpenChange={(open) => {
+          if (!open) setDeletingExperience(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Experience</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this experience from your Memory
+              Bank. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLoading}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleteLoading}>
+              {deleteLoading ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
