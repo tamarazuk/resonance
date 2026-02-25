@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+
 import { auth } from "@/lib/auth";
 
 export default async function Home() {
@@ -59,12 +59,22 @@ export default async function Home() {
       {/* ── Main ────────────────────────────────────────────────────────── */}
       <main className="flex-1">
         {/* Hero */}
-        <section className="relative overflow-hidden py-24 sm:py-32">
-          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/50 via-background to-background" />
+        <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-secondary/50 via-background to-background" />
 
-          <div className="mx-auto max-w-7xl px-6 text-center lg:px-8">
-            <div className="mx-auto flex max-w-3xl flex-col items-center">
-              <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-medium uppercase tracking-wide text-primary">
+          {/* Hero image — faint watermark on small screens, full on md+ */}
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-full opacity-[0.08] md:w-1/2 md:opacity-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/hero-stones-transparent.png"
+              alt=""
+              className="absolute bottom-0 right-0 h-[85%] w-auto max-w-none object-contain object-right-bottom"
+            />
+          </div>
+
+          <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="flex max-w-xl flex-col">
+              <div className="mb-8 inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-medium uppercase tracking-wide text-primary">
                 AI-Powered Career Toolkit
               </div>
 
@@ -76,12 +86,12 @@ export default async function Home() {
                 .
               </h1>
 
-              <p className="mt-2 max-w-xl text-lg font-light leading-relaxed text-muted-foreground">
+              <p className="mt-2 max-w-md text-lg font-light leading-relaxed text-muted-foreground">
                 Experience a calmer, more organized approach to your career
                 search. We bring tranquility to the chaos of applications.
               </p>
 
-              <div className="mt-12 flex flex-col justify-center gap-5 sm:flex-row">
+              <div className="mt-12 flex flex-col gap-5 sm:flex-row">
                 <Link
                   href="/signup"
                   className="flex h-12 items-center justify-center rounded-full bg-primary px-8 font-medium text-primary-foreground shadow-none transition-all hover:opacity-90"
@@ -92,22 +102,6 @@ export default async function Home() {
                   <PlayIcon className="size-5" />
                   View Demo
                 </button>
-              </div>
-            </div>
-
-            {/* Hero image */}
-            <div className="relative mt-20 sm:mt-24">
-              <div className="relative mx-auto max-w-5xl overflow-hidden rounded-2xl">
-                <Image
-                  src="/hero-stones.png"
-                  alt="Zen stones balanced in harmony — representing a calm, steady approach to career growth"
-                  width={1920}
-                  height={1080}
-                  className="h-auto w-full object-cover"
-                  priority
-                />
-                {/* Soft fade at bottom edge */}
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent" />
               </div>
             </div>
           </div>
