@@ -32,6 +32,7 @@ If unspecified, agents should default to **draft item**.
 - **Project ID:** `PVT_kwHOADQ5Ws4BQKPh`
 - **Status field:** `PVTSSF_lAHOADQ5Ws4BQKPhzg-XDYc`
   - Todo: `f75ad846`
+  - Planning: `63bc7529`
   - In Progress: `47fc9ee4`
   - Done: `98236657`
 - **Priority field:** `PVTSSF_lAHOADQ5Ws4BQKPhzg-XDdU`

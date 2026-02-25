@@ -24,6 +24,7 @@ We track all work on the **Resonance Roadmap** GitHub Project (project #2, owner
 - **Project ID:** `PVT_kwHOADQ5Ws4BQKPh`
 - **Status field:** `PVTSSF_lAHOADQ5Ws4BQKPhzg-XDYc`
   - Todo: `f75ad846`
+  - Planning: `63bc7529`
   - In Progress: `47fc9ee4`
   - Done: `98236657`
 - **Priority field:** `PVTSSF_lAHOADQ5Ws4BQKPhzg-XDdU`
@@ -37,15 +38,22 @@ We track all work on the **Resonance Roadmap** GitHub Project (project #2, owner
    ```sh
    gh project item-list 2 --owner tamarazuk --format json
    ```
-2. **Only pick up items with Status = Todo.** If an item is already "In Progress", another agent is working on it — do not touch it.
-3. **Claim the item** by setting Status to "In Progress" before writing any code:
+2. **Only pick up items with Status = Todo.** If an item is already "Planning" or "In Progress", another agent is working on it — do not touch it.
+3. **Claim the item immediately** by setting Status to "Planning" before any exploration or planning:
+   ```sh
+   gh project item-edit --project-id "PVT_kwHOADQ5Ws4BQKPh" \
+     --id "<ITEM_ID>" \
+     --field-id "PVTSSF_lAHOADQ5Ws4BQKPhzg-XDYc" \
+     --single-select-option-id "63bc7529"
+   ```
+4. **Move to "In Progress" when you start coding:**
    ```sh
    gh project item-edit --project-id "PVT_kwHOADQ5Ws4BQKPh" \
      --id "<ITEM_ID>" \
      --field-id "PVTSSF_lAHOADQ5Ws4BQKPhzg-XDYc" \
      --single-select-option-id "47fc9ee4"
    ```
-4. **Work in a feature branch** (not main). Branch naming: `feat/<short-description>`, `fix/<short-description>`.
+5. **Work in a feature branch** (not main). Branch naming: `feat/<short-description>`, `fix/<short-description>`.
 
 ### After Completing Work
 
@@ -60,7 +68,7 @@ We track all work on the **Resonance Roadmap** GitHub Project (project #2, owner
 
 ### Avoiding Conflicts Between Agents
 
-- **One agent per item.** The "In Progress" status is a lock — respect it.
+- **One agent per item.** The "Planning" and "In Progress" statuses are locks — respect them.
 - **Check for overlapping files.** Before editing a file, verify no other in-progress item is likely touching the same file. When in doubt, ask the user.
 - **Don't batch unrelated changes.** Keep each branch focused on a single board item so branches don't conflict.
 - **Prefer isolated directories.** Items like "Add loading.tsx files" and "Add error.tsx boundaries" touch different files and can safely run in parallel. Items like "Manual JD paste fallback" and "Experience edit/delete API" both touch API routes — coordinate if running simultaneously.
