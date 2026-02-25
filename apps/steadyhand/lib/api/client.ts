@@ -1,8 +1,6 @@
 import type {
   Experience,
   Application,
-  ParsedJD,
-  FitAnalysis,
   DraftedMaterials,
 } from "@resonance/types"
 
@@ -33,37 +31,12 @@ async function request<T>(
   return response.json() as Promise<T>
 }
 
-// ==================== Experiences ====================
+// ==================== Experiences (read-only) ====================
+// Experience creation is handled by the chat AI tool — no POST/PUT/DELETE.
+// The chat interface uses `useChat()` from `ai/react`, not this client.
 
 export function listExperiences(): Promise<Experience[]> {
   return request<Experience[]>("/api/experiences")
-}
-
-export function getExperience(id: string): Promise<Experience> {
-  return request<Experience>(`/api/experiences/${id}`)
-}
-
-export function createExperience(
-  data: { rawInput: string },
-): Promise<Experience> {
-  return request<Experience>("/api/experiences", {
-    method: "POST",
-    body: JSON.stringify(data),
-  })
-}
-
-export function updateExperience(
-  id: string,
-  data: Partial<Pick<Experience, "rawInput" | "starStructure" | "skills">>,
-): Promise<Experience> {
-  return request<Experience>(`/api/experiences/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(data),
-  })
-}
-
-export function deleteExperience(id: string): Promise<void> {
-  return request<void>(`/api/experiences/${id}`, { method: "DELETE" })
 }
 
 // ==================== Applications ====================
@@ -85,35 +58,11 @@ export function createApplication(
   })
 }
 
-export function updateApplicationStatus(
-  id: string,
-  status: Application["status"],
-): Promise<Application> {
-  return request<Application>(`/api/applications/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify({ status }),
-  })
+export function deleteApplication(id: string): Promise<void> {
+  return request<void>(`/api/applications/${id}`, { method: "DELETE" })
 }
 
 // ==================== Pipeline ====================
-
-export function parseJobDescription(
-  applicationId: string,
-): Promise<ParsedJD> {
-  return request<ParsedJD>(
-    `/api/applications/${applicationId}/parse`,
-    { method: "POST" },
-  )
-}
-
-export function analyzeFit(
-  applicationId: string,
-): Promise<FitAnalysis> {
-  return request<FitAnalysis>(
-    `/api/applications/${applicationId}/fit`,
-    { method: "POST" },
-  )
-}
 
 export function generateDraft(
   applicationId: string,
