@@ -206,6 +206,38 @@ docker compose up -d
 pnpm db:push
 ```
 
+### Database Troubleshooting (PG18 + stale local volume)
+
+If `POST /api/auth/signup` or login routes fail with `ECONNREFUSED`, check Docker first.
+
+Symptom:
+
+- `docker compose ps` shows `resonance-postgres` constantly restarting.
+
+Cause:
+
+- Local `postgres_data` volume was created before the move from `pg16` to `pg18`, and PG18 rejects that old layout.
+
+Fix:
+
+```sh
+# Preferred: one command runbook
+mise run db:reinit
+
+# Equivalent manual commands
+docker compose down -v
+docker compose up -d
+pnpm db:push
+```
+
+Verify:
+
+```sh
+docker compose ps
+docker compose exec -T postgres pg_isready -U resonance -d resonance_dev
+pnpm db:push
+```
+
 ### Development
 
 ```sh

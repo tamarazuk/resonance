@@ -69,7 +69,7 @@ resonance/
 
 1. `mise.toml` already exists — pins Node.js 24 LTS + pnpm 10, provides env loading and dev tasks
 2. `.npmrc` — no special hoisting config needed (pnpm defaults to strict isolation)
-3. Root `.gitignore` (node_modules, .next, .env*, dist, .turbo, drizzle meta)
+3. Root `.gitignore` (node_modules, .next, .env\*, dist, .turbo, drizzle meta)
 4. `.env.example` at root with all required env vars:
    - `DATABASE_URL`, `AUTH_SECRET`
    - `OPENAI_API_KEY`, `FIRECRAWL_API_KEY`
@@ -117,6 +117,7 @@ mkdir -p packages/typescript-config
 ```
 
 Create `packages/typescript-config/package.json`:
+
 ```json
 {
   "name": "@resonance/typescript-config",
@@ -126,6 +127,7 @@ Create `packages/typescript-config/package.json`:
 ```
 
 Then create these tsconfig files:
+
 - `base.json` — strict mode, ES2022 target, `"moduleResolution": "bundler"`, `"module": "ESNext"`
 - `nextjs.json` — extends base, adds JSX + Next.js plugin
 - `react-library.json` — extends base, adds `"jsx": "react-jsx"` for React packages that aren't Next.js apps (used by `packages/ui`)
@@ -140,6 +142,7 @@ mkdir -p packages/eslint-config
 ```
 
 Create `packages/eslint-config/package.json` with `"name": "@resonance/eslint-config"`, then install deps:
+
 ```sh
 pnpm --filter @resonance/eslint-config add -D eslint typescript-eslint eslint-config-prettier @next/eslint-plugin-next
 ```
@@ -147,11 +150,13 @@ pnpm --filter @resonance/eslint-config add -D eslint typescript-eslint eslint-co
 > **Note:** `eslint-plugin-prettier` is intentionally omitted — Prettier runs via lint-staged (Step 1.3), not inside ESLint. `eslint-config-prettier` only disables conflicting rules.
 
 Create flat config files:
+
 - Base config (TypeScript + Prettier conflict resolution)
 - Next.js config (extends base + Next.js rules)
 - Library config (extends base, no React rules)
 
 Each consuming workspace needs `@resonance/eslint-config@workspace:*` as a devDep and its own `eslint.config.mjs` importing the appropriate config:
+
 ```sh
 pnpm --filter @resonance/types add -D @resonance/eslint-config@workspace:*
 pnpm --filter @resonance/db add -D @resonance/eslint-config@workspace:*
@@ -170,12 +175,14 @@ mkdir -p packages/types/src
 Create `packages/types/package.json` with `"name": "@resonance/types"`, `"main"` and `"types"` pointing to source (no build step needed in monorepo with TS path resolution, or use `tsup` for compilation).
 
 Install deps:
+
 ```sh
 pnpm --filter @resonance/types add zod
 pnpm --filter @resonance/types add -D @resonance/typescript-config@workspace:*
 ```
 
 Contents:
+
 - **TypeScript interfaces:** `User`, `Experience`, `StarStructureOutput`, `ParsedJD`, `FitAnalysis`, `EffortEstimate`, `DraftedMaterials`, `TailoredBullet`, `Application`, `ApplicationStatus`
 - **Zod validation schemas:** `signupSchema`, `loginSchema`, `createExperienceSchema`, `updateExperienceSchema`, `createApplicationSchema`
 - Exports both TS types and Zod schemas
@@ -189,12 +196,14 @@ mkdir -p packages/db/src
 ```
 
 Create `packages/db/package.json` with `"name": "@resonance/db"`, then install deps:
+
 ```sh
 pnpm --filter @resonance/db add drizzle-orm postgres
 pnpm --filter @resonance/db add -D drizzle-kit @resonance/typescript-config@workspace:* @resonance/types@workspace:*
 ```
 
 **Contents:**
+
 - `schema.ts` — Drizzle table definitions:
   - `users` (id, email, password_hash, full_name, headline, timestamps)
   - `experiences` (id, user_id FK, raw_input, STAR fields, skills array, vector(1536) embedding, timestamps)
@@ -213,17 +222,21 @@ Shared React component library using [shadcn/ui](https://ui.shadcn.com) with [Ba
 `shadcn init` configures both `packages/ui` and the app workspace in one pass, so this step also scaffolds the Next.js app.
 
 1. Scaffold the Next.js app:
+
    ```sh
    pnpm create next-app@latest apps/steadyhand \
      --app --typescript --tailwind --no-src-dir \
      --import-alias "@/*"
    ```
+
    This creates Next.js 16 with App Router, Turbopack (default), and Tailwind v4.
 
 2. From the **monorepo root**, initialize shadcn:
+
    ```sh
    pnpm dlx shadcn@latest init
    ```
+
    When prompted:
    - Select **"Next.js (Monorepo)"**
    - Choose **Base UI** as the primitive library
@@ -234,24 +247,29 @@ Shared React component library using [shadcn/ui](https://ui.shadcn.com) with [Ba
    - `apps/steadyhand/components.json` — app-level config pointing to `@resonance/ui`
 
 3. Add the shared typescript-config dev dependency to the UI package:
+
    ```sh
    pnpm --filter @resonance/ui add -D @resonance/typescript-config@workspace:*
    ```
 
 4. Add remaining workspace dependencies to the app:
+
    ```sh
    pnpm --filter steadyhand add \
      @resonance/db@workspace:* \
      @resonance/types@workspace:*
    ```
+
    (`@resonance/ui` is already linked by `shadcn init`)
 
 5. Add Base UI components needed for MVP Day 1:
+
    ```sh
    cd apps/steadyhand
    pnpm dlx shadcn@latest add button input textarea card badge \
      dialog tabs tooltip separator
    ```
+
    The CLI installs primitives (Base UI-backed) into `packages/ui` and updates imports automatically.
 
 6. Custom components to create manually in `packages/ui/src/`:
@@ -262,9 +280,10 @@ Shared React component library using [shadcn/ui](https://ui.shadcn.com) with [Ba
      ```
 
 **Import pattern from apps:**
+
 ```ts
-import { Button } from "@resonance/ui/components/button"
-import { cn } from "@resonance/ui/lib/utils"
+import { Button } from "@resonance/ui/components/button";
+import { cn } from "@resonance/ui/lib/utils";
 ```
 
 **Both `components.json` files must have matching** `style`, `iconLibrary`, and `baseColor` values.
@@ -274,28 +293,32 @@ import { cn } from "@resonance/ui/lib/utils"
 Unit and component testing setup across the monorepo. E2E testing (Playwright) is added later in Step 3.7.
 
 1. Install root-level testing deps:
+
    ```sh
    pnpm add -D vitest @vitest/coverage-v8
    ```
 
 2. Install component testing deps in `packages/ui`:
+
    ```sh
    pnpm --filter @resonance/ui add -D @testing-library/react @testing-library/jest-dom happy-dom
    ```
 
 3. Install component testing deps in the app (for app-specific component tests):
+
    ```sh
    pnpm --filter steadyhand add -D @testing-library/react @testing-library/jest-dom happy-dom
    ```
 
 4. Create `vitest.workspace.ts` at the monorepo root:
+
    ```ts
-   import { defineWorkspace } from "vitest/config"
+   import { defineWorkspace } from "vitest/config";
 
    export default defineWorkspace([
      "packages/*/vitest.config.ts",
      "apps/*/vitest.config.ts",
-   ])
+   ]);
    ```
 
 5. Create per-package `vitest.config.ts` files:
@@ -305,6 +328,7 @@ Unit and component testing setup across the monorepo. E2E testing (Playwright) i
    - `apps/steadyhand/vitest.config.ts` — `environment: "happy-dom"`, path aliases matching `@/*`
 
 6. Add `test` task to `turbo.json`:
+
    ```json
    {
      "test": {
@@ -329,11 +353,13 @@ Unit and component testing setup across the monorepo. E2E testing (Playwright) i
 Dedicated Storybook app for developing and documenting shared UI components in isolation.
 
 1. Create the Storybook app workspace:
+
    ```sh
    mkdir -p apps/storybook/.storybook
    ```
 
 2. Create `apps/storybook/package.json`:
+
    ```json
    {
      "name": "storybook",
@@ -347,6 +373,7 @@ Dedicated Storybook app for developing and documenting shared UI components in i
    ```
 
 3. Install Storybook deps:
+
    ```sh
    pnpm --filter storybook add -D storybook @storybook/react-vite \
      @storybook/addon-essentials @storybook/addon-interactions \
@@ -356,26 +383,23 @@ Dedicated Storybook app for developing and documenting shared UI components in i
    > **Note:** Do not install `react` and `react-dom` directly — they are peer deps provided by `@resonance/ui`. If Storybook requires them explicitly, pin the same major version used by `apps/steadyhand` to avoid duplicate React runtime errors.
 
 4. Create `.storybook/main.ts`:
+
    ```ts
-   import type { StorybookConfig } from "@storybook/react-vite"
+   import type { StorybookConfig } from "@storybook/react-vite";
 
    const config: StorybookConfig = {
-     stories: [
-       "../../../packages/ui/src/**/*.stories.@(ts|tsx)",
-     ],
-     addons: [
-       "@storybook/addon-essentials",
-       "@storybook/addon-interactions",
-     ],
+     stories: ["../../../packages/ui/src/**/*.stories.@(ts|tsx)"],
+     addons: ["@storybook/addon-essentials", "@storybook/addon-interactions"],
      framework: "@storybook/react-vite",
-   }
+   };
 
-   export default config
+   export default config;
    ```
 
 5. Create `.storybook/preview.ts` — import `packages/ui` Tailwind v4 CSS so stories render with the correct theme.
 
 6. Add `storybook` task to `turbo.json`:
+
    ```json
    {
      "storybook": {
@@ -405,12 +429,14 @@ Dedicated Storybook app for developing and documenting shared UI components in i
 ### Step 3.1 — App-specific configuration
 
 The app was created in Step 2.5. Verify the setup:
+
 - `apps/steadyhand/` exists with App Router, Tailwind v4, and `components.json`
 - `@resonance/ui`, `@resonance/db`, and `@resonance/types` are in `package.json` dependencies
 
 ### Step 3.2 — Auth setup (Auth.js v5)
 
 Install deps:
+
 ```sh
 pnpm --filter steadyhand add next-auth@5 bcryptjs
 pnpm --filter steadyhand add -D @types/bcryptjs
@@ -422,14 +448,15 @@ pnpm --filter steadyhand add -D @types/bcryptjs
   - Credentials provider (email + password)
   - JWT session strategy
   - Callbacks for session/jwt to include userId
-- `lib/auth/middleware.ts` — Auth guard utilities (session extraction, protected route helpers)
-  - **Next.js 16 note:** `cookies()`, `headers()`, and `params` are fully async — all route handlers and middleware must `await` them
+- `lib/auth/helpers.ts` — Auth guard utilities (session extraction, protected route helpers)
+  - **Next.js 16 note:** `cookies()`, `headers()`, and `params` are fully async — all route handlers and proxy must `await` them
 - `app/api/auth/[...nextauth]/route.ts` — Auth.js catch-all route
-- `middleware.ts` — Next.js middleware for auth guards on `/dashboard/*`
+- `proxy.ts` — Next.js 16 proxy (replaces `middleware.ts`) for auth guards on `/dashboard/*`
 
 **Environment:** Uses `AUTH_SECRET` (v5 naming). `AUTH_URL` is auto-detected on Vercel — only needed for custom deployments.
 
 Generate a secret for local dev:
+
 ```sh
 npx auth secret
 ```
@@ -437,26 +464,28 @@ npx auth secret
 ### Step 3.3 — LLM pipeline modules
 
 Install deps:
+
 ```sh
 pnpm --filter steadyhand add openai ai @mendable/firecrawl-js zod
 ```
 
 All inside `apps/steadyhand/lib/`:
 
-| Module | File | Purpose |
-|--------|------|---------|
-| LLM Client | `lib/llm/client.ts` | OpenAI wrapper, retry with backoff, streaming support, structured output |
-| Embeddings | `lib/llm/embeddings.ts` | OpenAI embeddings wrapper (currently `text-embedding-3-small`, 1536 dims — swap if newer model available) |
-| STAR prompt | `lib/llm/prompts/star.ts` | Raw text -> `StarStructureOutput` |
-| JD parser prompt | `lib/llm/prompts/jd-parser.ts` | Clean text -> `ParsedJD` |
-| Fit analysis prompt | `lib/llm/prompts/fit-analysis.ts` | JD + experiences -> `FitAnalysis` |
-| Drafting prompt | `lib/llm/prompts/drafting.ts` | Cover letter + bullet rewriting |
-| Scraper | `lib/scraper/index.ts` | Firecrawl API integration |
-| Fit engine | `lib/analysis/fit.ts` | Cosine similarity + LLM scoring orchestration |
-| Drafting | `lib/drafting/index.ts` | Material generation orchestrator |
-| API client | `lib/api/client.ts` | Typed fetch wrappers for frontend |
+| Module              | File                              | Purpose                                                                                                   |
+| ------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| LLM Client          | `lib/llm/client.ts`               | OpenAI wrapper, retry with backoff, streaming support, structured output                                  |
+| Embeddings          | `lib/llm/embeddings.ts`           | OpenAI embeddings wrapper (currently `text-embedding-3-small`, 1536 dims — swap if newer model available) |
+| STAR prompt         | `lib/llm/prompts/star.ts`         | Raw text -> `StarStructureOutput`                                                                         |
+| JD parser prompt    | `lib/llm/prompts/jd-parser.ts`    | Clean text -> `ParsedJD`                                                                                  |
+| Fit analysis prompt | `lib/llm/prompts/fit-analysis.ts` | JD + experiences -> `FitAnalysis`                                                                         |
+| Drafting prompt     | `lib/llm/prompts/drafting.ts`     | Cover letter + bullet rewriting                                                                           |
+| Scraper             | `lib/scraper/index.ts`            | Firecrawl API integration                                                                                 |
+| Fit engine          | `lib/analysis/fit.ts`             | Cosine similarity + LLM scoring orchestration                                                             |
+| Drafting            | `lib/drafting/index.ts`           | Material generation orchestrator                                                                          |
+| API client          | `lib/api/client.ts`               | Typed fetch wrappers for frontend                                                                         |
 
 Create the directory structure:
+
 ```sh
 mkdir -p apps/steadyhand/lib/{llm/prompts,scraper,analysis,drafting,api}
 ```
@@ -488,12 +517,12 @@ Uses the Vercel AI SDK (`ai` package, already installed in Step 3.3).
 
 ```ts
 // Pseudocode outline
-import { streamText } from "ai"
-import { openai } from "@ai-sdk/openai"
+import { streamText } from "ai";
+import { openai } from "@ai-sdk/openai";
 
 export async function POST(req: Request) {
-  const { messages } = await req.json()
-  const session = await auth() // Auth.js session check
+  const { messages } = await req.json();
+  const session = await auth(); // Auth.js session check
 
   const result = streamText({
     model: openai("gpt-4o"),
@@ -522,13 +551,14 @@ export async function POST(req: Request) {
         },
       },
     },
-  })
+  });
 
-  return result.toDataStreamResponse()
+  return result.toDataStreamResponse();
 }
 ```
 
 Install the OpenAI provider for the Vercel AI SDK:
+
 ```sh
 pnpm --filter steadyhand add @ai-sdk/openai
 ```
@@ -536,6 +566,7 @@ pnpm --filter steadyhand add @ai-sdk/openai
 **`app/api/experiences/route.ts`** — Read-only `GET` endpoint. Returns the authenticated user's saved experiences for display in the Memory Bank panel. No `POST`/`PUT`/`DELETE` — creation is handled by the chat tool, and editing/deletion can be added later as needed.
 
 Create the directory structure:
+
 ```sh
 mkdir -p apps/steadyhand/app/api/{auth/\[...nextauth\],auth/signup,chat,experiences,applications/\[id\]/draft}
 ```
@@ -562,21 +593,26 @@ app/
 ```
 
 **`/dashboard/page.tsx` — Triage Dashboard (Home):**
+
 - Shows a prioritized list of action items (e.g., pending STAR reviews, applications needing follow-up)
 - Renders an `ActiveApplicationsTable` of all in-progress job applications with status indicators
 
 **`/dashboard/chat/page.tsx` — Career Coach (Primary Interface):**
+
 - Split-screen layout. Left column (60%) is the active chat interface with the AI career coach. Right column (40%) is the "Context/Memory Bank" sidebar displaying saved experiences as `ExperienceCard` components, updated in real-time as the chat tool saves new entries.
 - The Memory Bank sidebar is the persistent context panel — not a data-entry surface. Experience creation happens through conversation or via the "Manual Entry" fallback dialog.
 
 **`/dashboard/applications/new/page.tsx` — New Application:**
+
 - Centered, single-column layout. Primary action is a URL input field that triggers Firecrawl to scrape and parse the job description.
 - Below the URL input, a clear "Enter Manually" text link opens a traditional form dialog for pasting/typing the JD directly — the accessibility and speed fallback.
 
 **`/dashboard/applications/[id]/page.tsx` — Application Detail:**
+
 - Displays the parsed JD, Fit Analysis results, and the Material Drafter (cover letter + tailored bullets).
 
 Create the directory structure:
+
 ```sh
 mkdir -p apps/steadyhand/app/{"\(auth\)"/{login,signup},dashboard/{chat,applications/{new,\[id\]}}}
 ```
@@ -607,20 +643,24 @@ components/
 ```
 
 **Chat component notes:**
+
 - `ChatWindow.tsx` uses `useChat()` from `ai/react` (Vercel AI SDK) to manage message state, streaming, and tool call rendering
 - `ChatMessage.tsx` handles three variants: user messages, assistant messages, and tool-result confirmations (e.g., "Saved experience: Led migration to microservices")
 - `ChatInput.tsx` includes a microphone icon placeholder for future voice-to-text via the Web Speech API — important for users who prefer dictating stories aloud. The placeholder is a non-functional UI element in MVP; implementation is deferred.
 
 **Memory component notes:**
+
 - `ExperienceCard.tsx` is a read-only display card for the Context/Memory Bank sidebar. Shows the experience title, STAR summary, and skill badges.
 - `ExperienceForm.tsx` is the traditional form for manual STAR data entry. It is **not** rendered as a standalone page — it appears inside a dialog triggered by "Manual Entry" links throughout the app. This preserves a fast, accessible fallback for users who prefer direct form input over chat.
 - `StarReviewModal.tsx` is the human-in-the-loop checkpoint. When the AI chat tool extracts and structures a STAR story, this modal presents it for user review and editing before the experience is persisted to the database. Ensures data quality and user trust.
 
 **Dashboard component notes:**
+
 - `TriageCard.tsx` represents a single actionable item on the home dashboard (e.g., "Review AI-generated story", "Follow up with Company X").
 - `ActiveApplicationsTable.tsx` renders a sortable table of in-progress job applications with columns for company, role, status, and last activity date.
 
 Create the directory structure:
+
 ```sh
 mkdir -p apps/steadyhand/components/{chat,memory,dashboard,applications,layout}
 ```
@@ -630,14 +670,16 @@ mkdir -p apps/steadyhand/components/{chat,memory,dashboard,applications,layout}
 End-to-end tests for critical user flows. Added after pages and auth exist so there are real flows to test.
 
 1. Install Playwright at the root:
+
    ```sh
    pnpm add -D @playwright/test
    npx playwright install --with-deps chromium
    ```
 
 2. Create `playwright.config.ts` at the monorepo root:
+
    ```ts
-   import { defineConfig } from "@playwright/test"
+   import { defineConfig } from "@playwright/test";
 
    export default defineConfig({
      testDir: "./e2e",
@@ -649,10 +691,11 @@ End-to-end tests for critical user flows. Added after pages and auth exist so th
      use: {
        baseURL: "http://localhost:3000",
      },
-   })
+   });
    ```
 
 3. Create `e2e/` directory at the monorepo root for test files:
+
    ```sh
    mkdir -p e2e
    ```
@@ -688,7 +731,8 @@ services:
       POSTGRES_PASSWORD: resonance
       POSTGRES_DB: resonance_dev
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      # PG18+ expects major-versioned data directories under /var/lib/postgresql
+      - pgdata:/var/lib/postgresql
 
 volumes:
   pgdata:
@@ -697,9 +741,26 @@ volumes:
 No Redis needed for MVP (no BullMQ, no background jobs).
 
 Verify Docker setup:
+
 ```sh
 docker compose up -d
 docker compose exec postgres psql -U resonance -d resonance_dev -c "SELECT 1;"
+```
+
+If you upgrade Postgres major version locally (for example `pg16 -> pg18`), reset the local Docker volume or run an explicit DB upgrade flow. For local MVP setup, resetting is usually fastest:
+
+```sh
+docker compose down -v
+docker compose up -d
+pnpm db:push
+```
+
+Verification checklist:
+
+```sh
+docker compose ps
+docker compose exec -T postgres pg_isready -U resonance -d resonance_dev
+pnpm db:push
 ```
 
 ### Step 4.2 — Root scripts
@@ -724,7 +785,7 @@ In root `package.json`:
 }
 ```
 
-Note: `mise run` tasks wrap these for convenience (e.g., `mise run setup` does install + docker + db:push in one command).
+Note: `mise run` tasks wrap these for convenience (e.g., `mise run setup` does install + docker + db:push in one command). For local Postgres major-version upgrade breakage, use `mise run db:reinit`.
 
 ### Step 4.3 — Drizzle migration workflow
 
@@ -747,24 +808,24 @@ Note: `mise run` tasks wrap these for convenience (e.g., `mise run setup` does i
 
 ## Execution Order (Recommended)
 
-| Step | What | Depends on | Key commands |
-|------|------|------------|--------------|
-| 1 | Root monorepo setup | Nothing | `mise install && pnpm init && pnpm add -D turbo` |
-| 2 | `packages/typescript-config` | Step 1 | `mkdir -p packages/typescript-config` + create tsconfigs |
-| 3 | `packages/eslint-config` | Step 2 | `mkdir -p packages/eslint-config` + install eslint deps |
-| 4 | `packages/types` | Step 2 | `pnpm --filter @resonance/types add zod` |
-| 5 | Docker Compose + `.env.example` | Step 1 | `docker compose up -d` |
-| 6 | `packages/db` | Steps 2, 4, 5 | `pnpm --filter @resonance/db add drizzle-orm postgres` |
-| 7 | `apps/steadyhand` + `packages/ui` | Steps 2, 3 | `pnpm create next-app@latest ...` then `pnpm dlx shadcn@latest init` |
-| **8** | **Testing infrastructure (vitest)** | **Steps 2, 7** | **`pnpm add -D vitest @vitest/coverage-v8`** |
-| **9** | **Storybook** | **Step 7** | **`mkdir -p apps/storybook` + install storybook deps** |
-| 10 | Auth setup | Step 7 | `pnpm --filter steadyhand add next-auth@5 bcryptjs` |
-| 11 | LLM pipeline modules (stubs) | Steps 4, 7 | `pnpm --filter steadyhand add openai ai zod` |
-| 12 | API routes (stubs) | Steps 6, 10, 11 | Create route files |
-| 13 | Page structure + layouts | Step 7 | Create page files |
-| **14** | **E2E testing (Playwright)** | **Steps 10, 13** | **`pnpm add -D @playwright/test`** |
-| 15 | Pre-commit hooks | Step 3 | `pnpm exec husky init` (already installed) |
-| 16 | Verify everything works | All | `mise run setup && pnpm dev` |
+| Step   | What                                | Depends on       | Key commands                                                         |
+| ------ | ----------------------------------- | ---------------- | -------------------------------------------------------------------- |
+| 1      | Root monorepo setup                 | Nothing          | `mise install && pnpm init && pnpm add -D turbo`                     |
+| 2      | `packages/typescript-config`        | Step 1           | `mkdir -p packages/typescript-config` + create tsconfigs             |
+| 3      | `packages/eslint-config`            | Step 2           | `mkdir -p packages/eslint-config` + install eslint deps              |
+| 4      | `packages/types`                    | Step 2           | `pnpm --filter @resonance/types add zod`                             |
+| 5      | Docker Compose + `.env.example`     | Step 1           | `docker compose up -d`                                               |
+| 6      | `packages/db`                       | Steps 2, 4, 5    | `pnpm --filter @resonance/db add drizzle-orm postgres`               |
+| 7      | `apps/steadyhand` + `packages/ui`   | Steps 2, 3       | `pnpm create next-app@latest ...` then `pnpm dlx shadcn@latest init` |
+| **8**  | **Testing infrastructure (vitest)** | **Steps 2, 7**   | **`pnpm add -D vitest @vitest/coverage-v8`**                         |
+| **9**  | **Storybook**                       | **Step 7**       | **`mkdir -p apps/storybook` + install storybook deps**               |
+| 10     | Auth setup                          | Step 7           | `pnpm --filter steadyhand add next-auth@5 bcryptjs`                  |
+| 11     | LLM pipeline modules (stubs)        | Steps 4, 7       | `pnpm --filter steadyhand add openai ai zod`                         |
+| 12     | API routes (stubs)                  | Steps 6, 10, 11  | Create route files                                                   |
+| 13     | Page structure + layouts            | Step 7           | Create page files                                                    |
+| **14** | **E2E testing (Playwright)**        | **Steps 10, 13** | **`pnpm add -D @playwright/test`**                                   |
+| 15     | Pre-commit hooks                    | Step 3           | `pnpm exec husky init` (already installed)                           |
+| 16     | Verify everything works             | All              | `mise run setup && pnpm dev`                                         |
 
 ---
 

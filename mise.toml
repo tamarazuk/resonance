@@ -13,8 +13,20 @@ run = """
 pnpm install
 docker compose up -d
 echo "Waiting for Postgres to be ready..."
-until docker compose exec -T postgres pg_isready -U resonance > /dev/null 2>&1; do sleep 1; done
-pnpm db:push
+MAX_ATTEMPTS=60
+ATTEMPT=1
+until docker compose exec -T postgres pg_isready -U resonance -d resonance_dev > /dev/null 2>&1; do
+  if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
+    echo "Postgres did not become ready within 60s."
+    echo "Check: docker compose ps"
+    echo "Check: docker compose logs --tail=100 postgres"
+    echo "If this is a pg16->pg18 local upgrade issue, run: mise run db:reinit"
+    exit 1
+  fi
+  ATTEMPT=$((ATTEMPT + 1))
+  sleep 1
+done
+pnpm --filter @resonance/db exec drizzle-kit push --force
 """
 
 [tasks.dev]
@@ -43,7 +55,28 @@ description = "Drop and recreate local DB"
 run = """
 docker compose exec -T postgres psql -U resonance -d postgres -c "DROP DATABASE IF EXISTS resonance_dev;"
 docker compose exec -T postgres psql -U resonance -d postgres -c "CREATE DATABASE resonance_dev;"
-pnpm db:push
+pnpm --filter @resonance/db exec drizzle-kit push --force
+"""
+
+[tasks."db:reinit"]
+description = "Recreate local Postgres volume and re-apply schema (use for pg major-version local upgrades)"
+run = """
+docker compose down -v
+docker compose up -d
+echo "Waiting for Postgres to be ready..."
+MAX_ATTEMPTS=60
+ATTEMPT=1
+until docker compose exec -T postgres pg_isready -U resonance -d resonance_dev > /dev/null 2>&1; do
+  if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
+    echo "Postgres did not become ready within 60s after reinit."
+    echo "Check: docker compose ps"
+    echo "Check: docker compose logs --tail=100 postgres"
+    exit 1
+  fi
+  ATTEMPT=$((ATTEMPT + 1))
+  sleep 1
+done
+pnpm --filter @resonance/db exec drizzle-kit push --force
 """
 
 [tasks.docker]
