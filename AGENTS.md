@@ -15,6 +15,18 @@
 - Use prefixes like `feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`.
 - Examples: `feat(steadyhand): add user authentication`, `fix(docs): resolve login redirect issue`, `chore(deps): update dependencies`.
 
+## Worktree Workflow Notes (Learned)
+
+- In `.codex/worktrees/*`, verify branch state first; worktrees may start in detached `HEAD`.
+- Use semantic branches with issue linkage: `codex/feat/issue-<number>-<slug>` or `codex/fix/issue-<number>-<slug>`.
+- If `gh auth status` fails in sandbox but was recently authenticated, rerun `gh` commands with escalated permissions to access keychain/network.
+- Use `gh project item-list 2 --owner @me --format json` to read the board and pull the linked GitHub Issue number when available.
+- Include the issue number in branch and PR:
+  - Branch: `.../issue-<number>-...`
+  - PR title: `<type>(<scope>): <summary> (#<number>)`
+  - PR footer: `Closes #<number>`
+- While the task-tracking protocol is paused, do not change project item status unless explicitly requested by the user.
+
 ## Task Tracking — GitHub Projects
 
 > **⏸ PAUSED:** Task tracking protocol is temporarily suspended. The user is testing on main. Do not claim items, create branches, or update board status until this notice is removed.
