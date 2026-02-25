@@ -38,14 +38,17 @@ test.describe("Signup", () => {
     await expect(page).toHaveURL(/\/dashboard/)
   })
 
-  test("shows error for duplicate email", async ({ page }) => {
+  test("shows error for duplicate email", async ({ browser }) => {
     const email = testEmail()
 
-    // First signup — should succeed
-    await signup(page, { email })
-    await page.waitForURL("**/dashboard")
+    // First signup in a throwaway context — creates the account
+    const setupPage = await browser.newPage()
+    await signup(setupPage, { email })
+    await setupPage.waitForURL("**/dashboard")
+    await setupPage.close()
 
-    // Navigate to signup again and try the same email
+    // Second signup in a fresh (unauthenticated) context with the same email
+    const page = await browser.newPage()
     await page.goto("/signup")
     await page.getByLabel("Email").fill(email)
     await page.getByLabel("Password").fill(TEST_PASSWORD)
@@ -54,6 +57,7 @@ test.describe("Signup", () => {
     await expect(
       page.getByText("An account with this email already exists"),
     ).toBeVisible()
+    await page.close()
   })
 
   test("shows validation for short password", async ({ page }) => {

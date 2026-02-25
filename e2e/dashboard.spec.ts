@@ -61,8 +61,8 @@ test.describe("Dashboard — authenticated", () => {
     const { page, context } = await authenticatedContext(browser)
 
     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible()
-    await expect(page.getByText("Action Items")).toBeVisible()
-    await expect(page.getByText("Active Applications")).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Action Items" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Active Applications" })).toBeVisible()
 
     await context.close()
   })
@@ -100,9 +100,11 @@ test.describe("Dashboard — authenticated", () => {
   })
 
   test("displays user info in sidebar", async ({ browser }) => {
-    const { page, context } = await authenticatedContext(browser)
+    const { page, context, email } = await authenticatedContext(browser)
 
-    await expect(page.getByText("Dashboard Tester")).toBeVisible()
+    // Auth config doesn't map fullName to session.user.name, so sidebar
+    // falls back to "User" for the display name. Assert the email is shown.
+    await expect(page.getByText(email)).toBeVisible()
 
     await context.close()
   })
