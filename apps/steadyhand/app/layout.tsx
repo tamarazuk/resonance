@@ -16,8 +16,12 @@ const playfairDisplay = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "SteadyHand",
+  title: "Steadyhand",
   description: "AI-powered career toolkit",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    shortcut: [{ url: "/icon.svg", type: "image/svg+xml" }],
+  },
 };
 
 export default function RootLayout({
@@ -35,4 +39,3 @@ export default function RootLayout({
     </html>
   );
 }
-// test
