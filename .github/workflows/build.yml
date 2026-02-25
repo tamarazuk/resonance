@@ -3,6 +3,9 @@ name: Build
 on:
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -11,6 +14,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
       AUTH_SECRET: "ci-placeholder-secret-not-real"
