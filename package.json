@@ -23,7 +23,7 @@
     "test:e2e": "playwright test",
     "storybook": "turbo run storybook",
     "storybook:build": "pnpm --filter=./apps/storybook build",
-    "prepare": "husky install",
+    "prepare": "husky",
     "db:generate": "pnpm --filter @resonance/db db:generate",
     "db:push": "pnpm --filter @resonance/db db:push",
     "db:studio": "pnpm --filter @resonance/db db:studio",
@@ -40,11 +40,20 @@
     "ui:lint": "pnpm --filter=./packages/ui lint",
     "ui:test": "pnpm --filter=./packages/ui test"
   },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix"
+    ],
+    "*.{ts,tsx,json,css,md}": [
+      "prettier --write"
+    ]
+  },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@vitest/coverage-v8": "^4.0.18",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
+    "prettier": "^3.8.1",
     "turbo": "^2.8.10",
     "vitest": "^4.0.18"
   }
