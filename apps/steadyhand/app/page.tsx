@@ -183,7 +183,7 @@ export default async function Home() {
 
                 <Link
                   href="/signup"
-                  className="mt-4 inline-flex items-center text-sm font-medium uppercase tracking-wide text-primary transition-colors hover:opacity-80"
+                  className="mt-4 inline-flex items-center text-sm font-medium tracking-wide text-primary transition-colors hover:opacity-80"
                 >
                   Start your search with a clear head →
                 </Link>
