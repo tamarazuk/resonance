@@ -6,7 +6,16 @@ const config: StorybookConfig = {
     "../../../packages/ui/src/**/*.stories.@(ts|tsx)",
     "../../../apps/steadyhand/components/**/*.stories.@(ts|tsx)",
   ],
-  addons: ["@storybook/addon-essentials", "@storybook/addon-interactions"],
+  addons: [
+    {
+      name: "@storybook/addon-essentials",
+      options: {
+        measure: false,
+        outline: false,
+      },
+    },
+    "@storybook/addon-interactions",
+  ],
   framework: "@storybook/react-vite",
   viteFinal(config) {
     config.plugins = config.plugins ?? [];

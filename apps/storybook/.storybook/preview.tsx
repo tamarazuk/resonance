@@ -1,3 +1,4 @@
+import * as React from "react";
 import type { Preview } from "@storybook/react";
 
 import { TooltipProvider } from "@resonance/ui/components/tooltip";
@@ -7,15 +8,17 @@ const withAppShell: Preview["decorators"][number] = (Story, context) => {
   const theme = context.globals.theme === "dark" ? "dark" : "light";
 
   return (
-    <div className={theme}>
-      <div className="min-h-screen bg-background p-6 text-foreground sm:p-8">
-        <TooltipProvider>
-          <div className="mx-auto w-full max-w-5xl">
-            <Story />
-          </div>
-        </TooltipProvider>
+    <React.Fragment>
+      <div className={theme}>
+        <div className="min-h-screen bg-background p-6 text-foreground sm:p-8">
+          <TooltipProvider>
+            <div className="mx-auto w-full max-w-5xl">
+              <Story />
+            </div>
+          </TooltipProvider>
+        </div>
       </div>
-    </div>
+    </React.Fragment>
   );
 };
 
