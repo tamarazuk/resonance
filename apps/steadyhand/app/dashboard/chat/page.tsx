@@ -1,17 +1,16 @@
-"use client"
+"use client";
 
-import { useCallback, useEffect, useState } from "react"
-import type { Experience } from "@resonance/types"
-import { ChatWindow } from "@/components/chat/ChatWindow"
-import { ExperienceCard } from "@/components/memory/ExperienceCard"
-import { ExperienceForm } from "@/components/memory/ExperienceForm"
-import { Button } from "@resonance/ui/components/button"
+import { useCallback, useEffect, useState } from "react";
+import type { Experience } from "@resonance/types";
+import { ChatWindow } from "@/components/chat/ChatWindow";
+import { ExperienceCard } from "@/components/memory/ExperienceCard";
+import { ExperienceForm } from "@/components/memory/ExperienceForm";
 import {
   EmptyState,
   EmptyStateIcon,
   EmptyStateTitle,
   EmptyStateDescription,
-} from "@resonance/ui/components/empty-state"
+} from "@resonance/ui/components/empty-state";
 
 /**
  * Career Coach — Chat-First Interface
@@ -21,34 +20,54 @@ import {
  * - Right column (40%): Context/Memory Bank sidebar showing saved experiences
  */
 export default function ChatPage() {
-  const [experiences, setExperiences] = useState<Experience[]>([])
-  const [loading, setLoading] = useState(true)
+  const [experiences, setExperiences] = useState<Experience[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState("All");
 
   const fetchExperiences = useCallback(async () => {
     try {
-      const res = await fetch("/api/experiences")
+      const res = await fetch("/api/experiences");
       if (res.ok) {
-        const data = await res.json()
-        setExperiences(data)
+        const data = await res.json();
+        setExperiences(data);
       }
     } catch {
       // Silently fail — sidebar is non-critical
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    fetchExperiences()
-  }, [fetchExperiences])
+    fetchExperiences();
+  }, [fetchExperiences]);
+
+  // Filter tabs — "All" plus unique categories extracted from experiences
+  const filterTabs = ["All", "Leadership", "Technical", "Conflict"];
 
   return (
     <div className="flex h-full">
       {/* Left column — Chat interface (60%) */}
-      <div className="flex w-3/5 flex-col border-r border-border">
+      <div className="flex w-3/5 flex-col border-r border-border bg-card">
         {/* Chat header */}
-        <div className="flex h-14 items-center border-b border-border px-6">
-          <h1 className="text-lg font-semibold">Career Coach</h1>
+        <div className="flex items-center justify-between border-b border-border/50 bg-card/90 px-8 py-5 backdrop-blur-sm">
+          <div>
+            <h1 className="text-lg font-medium text-foreground">
+              Coaching Session
+            </h1>
+            <p className="mt-0.5 text-sm font-light text-muted-foreground">
+              Leadership &amp; STAR Method
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 rounded px-2 py-0.5 text-xs font-medium text-primary">
+              <span className="size-1.5 animate-pulse rounded-full bg-primary" />
+              Active
+            </span>
+            <button className="rounded p-1.5 text-muted-foreground/40 transition-colors hover:bg-muted hover:text-foreground">
+              <MoreHorizIcon className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         {/* Chat window */}
@@ -56,52 +75,83 @@ export default function ChatPage() {
       </div>
 
       {/* Right column — Memory Bank sidebar (40%) */}
-      <div className="flex w-2/5 flex-col">
+      <div className="flex w-2/5 flex-col bg-secondary">
         {/* Sidebar header */}
-        <div className="flex h-14 items-center justify-between border-b border-border px-6">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold">Memory Bank</h2>
-            <span className="text-xs text-muted-foreground">
-              {experiences.length} experience{experiences.length !== 1 ? "s" : ""}
-            </span>
-          </div>
+        <div className="flex items-center justify-between px-8 py-6">
+          <h2 className="text-base font-semibold tracking-tight text-foreground">
+            Memory Bank
+          </h2>
           <ExperienceForm
             onSaved={fetchExperiences}
             trigger={
-              <Button variant="ghost" size="sm">
-                <PlusIcon className="mr-1 h-3.5 w-3.5" />
-                Manual Entry
-              </Button>
+              <button className="flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80">
+                <PlusIcon className="h-4.5 w-4.5" />
+                New Entry
+              </button>
             }
           />
         </div>
 
+        {/* Filter tabs */}
+        <div className="flex gap-4 border-b border-primary/20 px-8">
+          {filterTabs.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveFilter(tab)}
+              className={`whitespace-nowrap border-b-2 pb-2 text-xs font-medium transition-colors ${
+                activeFilter === tab
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-primary"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
         {/* Experience cards */}
-        <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
+        <div className="flex flex-1 flex-col overflow-y-auto px-8 pb-8">
           {loading ? (
             <div className="flex flex-1 items-center justify-center">
               <p className="text-sm text-muted-foreground">Loading...</p>
             </div>
           ) : experiences.length === 0 ? (
-            <EmptyState>
-              <EmptyStateIcon>
-                <BrainIcon className="h-10 w-10" />
-              </EmptyStateIcon>
-              <EmptyStateTitle>No experiences yet</EmptyStateTitle>
-              <EmptyStateDescription>
-                Experiences you share in the chat will appear here as structured
-                STAR stories.
-              </EmptyStateDescription>
-            </EmptyState>
+            <div className="flex flex-1 items-center justify-center">
+              <EmptyState>
+                <EmptyStateIcon>
+                  <BrainIcon className="h-10 w-10" />
+                </EmptyStateIcon>
+                <EmptyStateTitle>No experiences yet</EmptyStateTitle>
+                <EmptyStateDescription>
+                  Experiences you share in the chat will appear here as
+                  structured STAR stories.
+                </EmptyStateDescription>
+              </EmptyState>
+            </div>
           ) : (
             experiences.map((exp) => (
               <ExperienceCard key={exp.id} experience={exp} />
             ))
           )}
         </div>
+
+        {/* Tip card */}
+        <div className="px-8 pb-6">
+          <div className="flex items-start gap-3 rounded-sm border border-primary/20 bg-card/50 p-4">
+            <LightbulbIcon className="mt-0.5 h-4.5 w-4.5 shrink-0 text-primary" />
+            <div>
+              <p className="mb-1 text-xs font-medium text-foreground">
+                Quantify Results
+              </p>
+              <p className="text-xs font-light leading-relaxed text-muted-foreground">
+                Use specific numbers and percentages to increase impact.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  )
+  );
 }
 
 // ─── Inline icons ────────────────────────────────────────────────────────────
@@ -121,7 +171,7 @@ function PlusIcon({ className }: { className?: string }) {
       <path d="M5 12h14" />
       <path d="M12 5v14" />
     </svg>
-  )
+  );
 }
 
 function BrainIcon({ className }: { className?: string }) {
@@ -146,5 +196,39 @@ function BrainIcon({ className }: { className?: string }) {
       <path d="M6 18a4 4 0 0 1-1.967-.516" />
       <path d="M19.967 17.484A4 4 0 0 1 18 18" />
     </svg>
-  )
+  );
+}
+
+function MoreHorizIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+    >
+      <circle cx="5" cy="12" r="2" />
+      <circle cx="12" cy="12" r="2" />
+      <circle cx="19" cy="12" r="2" />
+    </svg>
+  );
+}
+
+function LightbulbIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+      <path d="M9 18h6" />
+      <path d="M10 22h4" />
+    </svg>
+  );
 }

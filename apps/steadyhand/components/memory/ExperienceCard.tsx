@@ -1,62 +1,149 @@
-import type { Experience } from "@resonance/types"
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@resonance/ui/components/card"
-import { Badge } from "@resonance/ui/components/badge"
+import type { Experience } from "@resonance/types";
 
 /**
- * Compact card showing a STAR summary + skill badges.
+ * Memory Bank experience card — displayed in the sidebar.
  *
- * Used in the Memory Bank sidebar (right column of the chat split-screen).
- * Read-only display — experience creation happens through the chat tool
- * or the ManualEntry dialog.
+ * Richer layout matching Stitch design: status indicator, STAR fields
+ * with left-border accent, category metadata, hover-reveal edit button.
  */
-export function ExperienceCard({
-  experience,
-}: {
-  experience: Experience
-}) {
-  const star = experience.starStructure
+export function ExperienceCard({ experience }: { experience: Experience }) {
+  const star = experience.starStructure;
+  const hasAllStarFields =
+    star?.situation && star?.task && star?.action && star?.result;
 
   return (
-    <Card size="sm">
-      <CardHeader>
-        <CardTitle className="line-clamp-2 text-sm">
-          {experience.rawInput}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        {star && (
-          <dl className="flex flex-col gap-1.5 text-xs text-muted-foreground">
-            <StarField label="S" value={star.situation} />
-            <StarField label="T" value={star.task} />
-            <StarField label="A" value={star.action} />
-            <StarField label="R" value={star.result} />
-          </dl>
-        )}
+    <div className="group cursor-pointer border-b border-primary/20 py-6">
+      {/* Status + metadata row */}
+      <div className="mb-2 flex items-start justify-between">
+        <div className="flex items-center gap-2">
+          {hasAllStarFields ? (
+            <>
+              <CheckIcon className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Verified
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="size-1.5 animate-pulse rounded-full bg-primary" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                Drafting
+              </span>
+            </>
+          )}
+        </div>
+        <button className="text-muted-foreground/30 opacity-0 transition-all hover:text-primary group-hover:opacity-100">
+          <EditIcon className="h-4.5 w-4.5" />
+        </button>
+      </div>
 
-        {experience.skills.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {experience.skills.map((skill) => (
-              <Badge key={skill} variant="secondary" className="text-[0.65rem]">
-                {skill}
-              </Badge>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
+      {/* Title */}
+      <h3 className="mb-2 text-base font-medium text-foreground transition-colors group-hover:text-primary">
+        {experience.rawInput}
+      </h3>
+
+      {/* Description — show if star structure is incomplete */}
+      {!hasAllStarFields && star && (
+        <p className="mb-4 text-sm font-light leading-relaxed text-muted-foreground">
+          Refining the STAR format for this experience.
+        </p>
+      )}
+
+      {/* STAR fields with left border accent */}
+      {star && (
+        <div className="space-y-3 border-l border-primary/20 pl-3">
+          {star.situation && (
+            <StarField label="Situation" value={star.situation} />
+          )}
+          {star.task && (
+            <StarField
+              label="Task"
+              value={star.task}
+              highlight={!hasAllStarFields}
+            />
+          )}
+          {star.action && <StarField label="Action" value={star.action} />}
+          {star.result && (
+            <StarField label="Result" value={star.result} highlight />
+          )}
+        </div>
+      )}
+
+      {/* Skill badges */}
+      {experience.skills.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {experience.skills.map((skill) => (
+            <span
+              key={skill}
+              className="rounded-sm bg-card/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+            >
+              {skill}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
-function StarField({ label, value }: { label: string; value: string }) {
+function StarField({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
   return (
-    <div className="flex gap-1.5">
-      <dt className="shrink-0 font-semibold text-foreground">{label}:</dt>
-      <dd className="line-clamp-2">{value}</dd>
+    <div className="flex flex-col gap-1">
+      <span
+        className={`text-[10px] font-medium uppercase tracking-wider ${
+          highlight ? "text-primary" : "text-muted-foreground"
+        }`}
+      >
+        {label}
+      </span>
+      <p className="line-clamp-2 text-sm font-light text-foreground/70">
+        {value}
+      </p>
     </div>
-  )
+  );
+}
+
+// ─── Inline icons ────────────────────────────────────────────────────────────
+
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+function EditIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+      <path d="m15 5 4 4" />
+    </svg>
+  );
 }

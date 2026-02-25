@@ -1,5 +1,4 @@
-import type { ParsedJD as ParsedJDType } from "@resonance/types"
-import { Badge } from "@resonance/ui/components/badge"
+import type { ParsedJD as ParsedJDType } from "@resonance/types";
 
 /**
  * Renders a parsed job description in a structured, readable format.
@@ -9,27 +8,32 @@ import { Badge } from "@resonance/ui/components/badge"
  */
 export function ParsedJD({ data }: { data: ParsedJDType }) {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col gap-1">
-        <h3 className="text-lg font-semibold">{data.title}</h3>
-        <p className="text-sm text-muted-foreground">
+      <div className="space-y-1">
+        <h3 className="text-2xl font-semibold tracking-tight text-foreground">
+          {data.title}
+        </h3>
+        <p className="text-sm font-light text-muted-foreground">
           {data.company}
-          {data.location && ` · ${data.location}`}
+          {data.location && ` \u00b7 ${data.location}`}
         </p>
         {data.salary && (
-          <p className="text-sm font-medium text-foreground">{data.salary}</p>
+          <p className="text-sm font-medium text-primary">{data.salary}</p>
         )}
       </div>
 
       {/* Skills */}
       {data.skills.length > 0 && (
-        <Section title="Skills">
-          <div className="flex flex-wrap gap-1.5">
+        <Section title="Required Skills">
+          <div className="flex flex-wrap gap-2">
             {data.skills.map((skill) => (
-              <Badge key={skill} variant="secondary">
+              <span
+                key={skill}
+                className="rounded-full border border-primary/20 bg-secondary px-3 py-1 text-xs font-medium text-primary"
+              >
                 {skill}
-              </Badge>
+              </span>
             ))}
           </div>
         </Section>
@@ -56,33 +60,38 @@ export function ParsedJD({ data }: { data: ParsedJDType }) {
         </Section>
       )}
     </div>
-  )
+  );
 }
 
 function Section({
   title,
   children,
 }: {
-  title: string
-  children: React.ReactNode
+  title: string;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-2">
-      <h4 className="text-sm font-medium text-muted-foreground">{title}</h4>
+    <div className="space-y-3">
+      <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        {title}
+      </h4>
       {children}
     </div>
-  )
+  );
 }
 
 function BulletList({ items }: { items: string[] }) {
   return (
-    <ul className="flex flex-col gap-1.5 text-sm">
+    <ul className="space-y-2">
       {items.map((item, i) => (
-        <li key={i} className="flex gap-2">
-          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/40" />
-          <span>{item}</span>
+        <li
+          key={i}
+          className="flex items-start gap-3 text-sm font-light leading-relaxed text-foreground"
+        >
+          <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-primary/40" />
+          {item}
         </li>
       ))}
     </ul>
-  )
+  );
 }

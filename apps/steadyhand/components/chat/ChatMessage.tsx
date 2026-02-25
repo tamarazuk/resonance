@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import type { UIMessage } from "ai"
-import { Badge } from "@resonance/ui/components/badge"
-import { cn } from "@resonance/ui/lib/utils"
+import type { UIMessage } from "ai";
+import { Badge } from "@resonance/ui/components/badge";
+import { cn } from "@resonance/ui/lib/utils";
 
 /**
  * Individual chat message — renders user, assistant, and tool-result variants.
@@ -11,28 +11,38 @@ import { cn } from "@resonance/ui/lib/utils"
  * text content and tool invocation results inline.
  */
 export function ChatMessage({ message }: { message: UIMessage }) {
-  const isUser = message.role === "user"
+  const isUser = message.role === "user";
 
   return (
     <div
       className={cn(
-        "flex w-full gap-3",
-        isUser ? "justify-end" : "justify-start"
+        "flex items-start gap-4 group",
+        isUser ? "justify-end" : "justify-start",
       )}
     >
-      {/* Avatar */}
+      {/* AI avatar */}
       {!isUser && (
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary grayscale-[50%]">
           AI
         </div>
       )}
 
       <div
         className={cn(
-          "flex max-w-[80%] flex-col gap-2",
-          isUser ? "items-end" : "items-start"
+          "flex max-w-[85%] flex-col gap-1",
+          isUser ? "items-end" : "items-start",
         )}
       >
+        {/* Name label */}
+        <span
+          className={cn(
+            "text-xs font-medium text-muted-foreground",
+            isUser ? "mr-1" : "ml-1",
+          )}
+        >
+          {isUser ? "You" : "Coach Sarah"}
+        </span>
+
         {message.parts.map((part, i) => {
           switch (part.type) {
             case "text":
@@ -40,25 +50,22 @@ export function ChatMessage({ message }: { message: UIMessage }) {
                 <div
                   key={i}
                   className={cn(
-                    "rounded-lg px-4 py-2.5 text-sm leading-relaxed",
+                    "rounded-xl p-4 text-[0.95rem] leading-relaxed",
                     isUser
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-foreground"
+                      ? "rounded-tr-none bg-secondary text-foreground"
+                      : "rounded-tl-none border border-border bg-card text-foreground/85",
                   )}
                 >
                   {part.text}
                 </div>
-              )
+              );
 
             case "step-start":
-              return null
+              return null;
 
             default: {
-              // Handle tool invocation parts (type: "tool-{name}" or "dynamic-tool")
-              if (
-                "toolCallId" in part &&
-                "state" in part
-              ) {
+              // Handle tool invocation parts
+              if ("toolCallId" in part && "state" in part) {
                 return (
                   <ToolResultBadge
                     key={i}
@@ -69,9 +76,9 @@ export function ChatMessage({ message }: { message: UIMessage }) {
                         : undefined
                     }
                   />
-                )
+                );
               }
-              return null
+              return null;
             }
           }
         })}
@@ -79,31 +86,31 @@ export function ChatMessage({ message }: { message: UIMessage }) {
 
       {/* User avatar */}
       {isUser && (
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-medium text-secondary-foreground">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-medium text-foreground/60">
           You
         </div>
       )}
     </div>
-  )
+  );
 }
 
 type ToolOutput = {
-  success: boolean
-  summary?: string
-  skillCount?: number
-}
+  success: boolean;
+  summary?: string;
+  skillCount?: number;
+};
 
 function ToolResultBadge({
   state,
   output,
 }: {
-  state: string
-  output?: ToolOutput
+  state: string;
+  output?: ToolOutput;
 }) {
   if (state === "output-available" && output?.success) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm">
-        <CheckCircleIcon className="h-4 w-4 shrink-0 text-emerald-600" />
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm">
+        <CheckCircleIcon className="h-4 w-4 shrink-0 text-primary" />
         <span className="text-muted-foreground">
           {output.summary ?? "Experience saved to Memory Bank"}
         </span>
@@ -113,7 +120,7 @@ function ToolResultBadge({
           </Badge>
         )}
       </div>
-    )
+    );
   }
 
   if (state === "output-error") {
@@ -122,7 +129,7 @@ function ToolResultBadge({
         <XCircleIcon className="h-4 w-4 shrink-0" />
         <span>Failed to save experience</span>
       </div>
-    )
+    );
   }
 
   // Loading states: input-streaming, input-available
@@ -131,7 +138,7 @@ function ToolResultBadge({
       <LoadingDots />
       <span>Saving to Memory Bank...</span>
     </div>
-  )
+  );
 }
 
 // ─── Inline icons ────────────────────────────────────────────────────────────
@@ -151,7 +158,7 @@ function CheckCircleIcon({ className }: { className?: string }) {
       <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
       <path d="m9 11 3 3L22 4" />
     </svg>
-  )
+  );
 }
 
 function XCircleIcon({ className }: { className?: string }) {
@@ -170,7 +177,7 @@ function XCircleIcon({ className }: { className?: string }) {
       <path d="m15 9-6 6" />
       <path d="m9 9 6 6" />
     </svg>
-  )
+  );
 }
 
 function LoadingDots() {
@@ -180,5 +187,5 @@ function LoadingDots() {
       <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.15s]" />
       <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current" />
     </span>
-  )
+  );
 }

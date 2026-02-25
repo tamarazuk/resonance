@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@resonance/ui/components/button"
-import { Input } from "@resonance/ui/components/input"
-import { Textarea } from "@resonance/ui/components/textarea"
+import { useState } from "react";
+import { Button } from "@resonance/ui/components/button";
+import { Input } from "@resonance/ui/components/input";
+import { Textarea } from "@resonance/ui/components/textarea";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@resonance/ui/components/dialog"
+} from "@resonance/ui/components/dialog";
 
 /**
  * Traditional STAR data-entry form — used inside a "Manual Entry" dialog.
@@ -27,34 +27,34 @@ export function ExperienceForm({
   onSaved,
   trigger,
 }: {
-  onSaved?: () => void
-  trigger: React.ReactNode
+  onSaved?: () => void;
+  trigger: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [rawInput, setRawInput] = useState("")
-  const [situation, setSituation] = useState("")
-  const [task, setTask] = useState("")
-  const [action, setAction] = useState("")
-  const [result, setResult] = useState("")
-  const [skills, setSkills] = useState("")
+  const [rawInput, setRawInput] = useState("");
+  const [situation, setSituation] = useState("");
+  const [task, setTask] = useState("");
+  const [action, setAction] = useState("");
+  const [result, setResult] = useState("");
+  const [skills, setSkills] = useState("");
 
   function resetForm() {
-    setRawInput("")
-    setSituation("")
-    setTask("")
-    setAction("")
-    setResult("")
-    setSkills("")
-    setError(null)
+    setRawInput("");
+    setSituation("");
+    setTask("");
+    setAction("");
+    setResult("");
+    setSkills("");
+    setError(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
 
     try {
       const res = await fetch("/api/experiences", {
@@ -71,21 +71,21 @@ export function ExperienceForm({
             .map((s) => s.trim())
             .filter(Boolean),
         }),
-      })
+      });
 
       if (!res.ok) {
-        const data = await res.json()
-        setError(data.error ?? "Failed to save experience")
-        return
+        const data = await res.json();
+        setError(data.error ?? "Failed to save experience");
+        return;
       }
 
-      resetForm()
-      setOpen(false)
-      onSaved?.()
+      resetForm();
+      setOpen(false);
+      onSaved?.();
     } catch {
-      setError("Network error — please try again")
+      setError("Network error — please try again");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -167,7 +167,7 @@ export function ExperienceForm({
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 function FormField({
@@ -175,17 +175,17 @@ function FormField({
   required,
   children,
 }: {
-  label: string
-  required?: boolean
-  children: React.ReactNode
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium">
+      <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
         {label}
         {required && <span className="text-destructive"> *</span>}
       </label>
       {children}
     </div>
-  )
+  );
 }
