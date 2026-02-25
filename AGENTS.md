@@ -17,8 +17,6 @@
 
 ## Task Tracking — GitHub Projects
 
-> **⏸ PAUSED:** Task tracking protocol is temporarily suspended. The user is testing on main. Do not claim items, create branches, or update board status until this notice is removed.
-
 We track all work on the **Resonance Roadmap** GitHub Project (project #2, owner `tamarazuk`). Every agent working in this repo must follow this protocol.
 
 ### Project IDs (for `gh project item-edit`)
