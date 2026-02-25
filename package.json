@@ -6,9 +6,14 @@
   "pnpm": {
     "onlyBuiltDependencies": []
   },
+  "scripts": {
+    "test": "turbo test"
+  },
   "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.18",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
-    "turbo": "^2.8.10"
+    "turbo": "^2.8.10",
+    "vitest": "^4.0.18"
   }
 }
