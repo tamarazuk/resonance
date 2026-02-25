@@ -75,3 +75,5 @@ drizzle/meta/
 # Misc
 .vercel
 .claude
+.todos/
+.sidecar/
