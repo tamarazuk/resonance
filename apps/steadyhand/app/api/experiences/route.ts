@@ -14,7 +14,7 @@ function toExperience(row: typeof experiences.$inferSelect): ExperienceType {
         ? { situation: row.situation, task: row.task, action: row.action, result: row.result }
         : null,
     skills: row.skills,
-    embedding: row.embedding ? (JSON.parse(row.embedding) as number[]) : null,
+    embedding: row.embedding ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }

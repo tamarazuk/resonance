@@ -84,7 +84,7 @@ export async function POST(req: Request) {
       externalUrl,
       rawHtml: scrapeResult.rawHtml ?? null,
       parsedJD: parseResult.data,
-      embedding: JSON.stringify(embedding),
+      embedding,
     })
     .returning()
 

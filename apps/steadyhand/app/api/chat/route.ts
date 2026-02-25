@@ -84,7 +84,7 @@ export async function POST(req: Request) {
               action,
               result,
               skills,
-              embedding: JSON.stringify(embedding),
+              embedding,
             })
             .returning({ id: experiences.id })
 

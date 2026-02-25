@@ -1,4 +1,5 @@
 import { pgTable, uuid, text, timestamp, jsonb, pgEnum } from "drizzle-orm/pg-core"
+import { vector } from "drizzle-orm/pg-core/columns/vector_extension/vector"
 import { relations } from "drizzle-orm"
 
 // ==================== Enums ====================
@@ -43,7 +44,7 @@ export const experiences = pgTable("experiences", {
   action: text("action"),
   result: text("result"),
   skills: text("skills").array().notNull().default([]),
-  embedding: text("embedding"), // Will store as JSON array of numbers since Drizzle doesn't have native vector support yet
+  embedding: vector("embedding", { dimensions: 1536 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")
     .notNull()
@@ -70,7 +71,7 @@ export const applications = pgTable("applications", {
     benefits: string[]
     salary: string | null
   }>(),
-  embedding: text("embedding"), // Will store as JSON array of numbers
+  embedding: vector("embedding", { dimensions: 1536 }),
   fitAnalysis: jsonb("fit_analysis").$type<{
     overallScore: number
     matchingSkills: string[]

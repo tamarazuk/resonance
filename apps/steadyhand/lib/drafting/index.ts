@@ -1,6 +1,5 @@
 import type {
   ParsedJD,
-  Experience,
   FitAnalysis,
   DraftedMaterials,
   LLMResponse,
@@ -10,7 +9,7 @@ import { draftMaterials } from "../llm/prompts/drafting"
 
 export interface DraftingInput {
   parsedJD: ParsedJD
-  experiences: Experience[]
+  userId: string
   fitAnalysis: FitAnalysis
   maxExperiences?: number
 }
@@ -18,12 +17,10 @@ export interface DraftingInput {
 export async function generateMaterials(
   input: DraftingInput,
 ): Promise<LLMResponse<DraftedMaterials>> {
-  const { parsedJD, experiences, fitAnalysis, maxExperiences = 5 } = input
+  const { parsedJD, userId, fitAnalysis, maxExperiences = 5 } = input
 
-  const ranked = await rankExperiencesByFit(parsedJD, experiences)
-  const topExperiences = ranked
-    .slice(0, maxExperiences)
-    .map((s) => s.experience)
+  const ranked = await rankExperiencesByFit(parsedJD, userId, maxExperiences)
+  const topExperiences = ranked.map((s) => s.experience)
 
   return draftMaterials(parsedJD, topExperiences, fitAnalysis)
 }
