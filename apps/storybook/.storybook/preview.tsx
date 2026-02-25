@@ -10,7 +10,7 @@ const withAppShell: Preview["decorators"][number] = (Story, context) => {
   return (
     <React.Fragment>
       <div className={theme}>
-        <div className="min-h-screen bg-background p-6 text-foreground sm:p-8">
+        <div className="bg-background p-6 text-foreground sm:p-8">
           <TooltipProvider>
             <div className="mx-auto w-full max-w-5xl">
               <Story />
