@@ -1,6 +1,7 @@
 [tools]
 node = "24"
 pnpm = "10"
+"npm:portless" = "latest"
 
 [env]
 _.file = ".env"
@@ -17,10 +18,15 @@ pnpm db:push
 """
 
 [tasks.dev]
-description = "Start Docker + dev server"
+description = "Start Docker + dev servers with portless"
 run = """
 docker compose up -d
-pnpm dev
+portless proxy start
+trap 'kill 0' EXIT
+portless steadyhand pnpm --filter=steadyhand dev &
+sleep 2
+portless storybook pnpm --filter=storybook dev &
+wait
 """
 
 [tasks.db]
