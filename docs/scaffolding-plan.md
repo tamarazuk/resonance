@@ -461,28 +461,88 @@ Create the directory structure:
 mkdir -p apps/steadyhand/lib/{llm/prompts,scraper,analysis,drafting,api}
 ```
 
-### Step 3.4 — API routes
+### Step 3.4 — API routes (Chat-First Architecture)
+
+The primary data-entry path is conversational. The user talks to an AI career coach, and when they share a professional story, the AI uses **tool calling** to extract, structure (STAR format), and persist the experience — all in the background during the conversation.
+
+There is no traditional `POST /api/experiences` CRUD route. Experience creation is handled exclusively through the chat tool.
 
 ```
 app/api/
 ├── auth/
 │   ├── [...nextauth]/route.ts   # Auth.js handler
 │   └── signup/route.ts          # POST — create user with hashed password
+├── chat/
+│   └── route.ts                 # POST — Vercel AI SDK streaming chat endpoint
 ├── experiences/
-│   ├── route.ts                 # GET (list), POST (create + STAR + embed)
-│   └── [id]/route.ts            # GET, PUT, DELETE
+│   └── route.ts                 # GET (list for Memory Bank display)
 └── applications/
     ├── route.ts                 # GET (list), POST (create + scrape + parse)
     ├── [id]/route.ts            # GET, DELETE
     └── [id]/draft/route.ts      # POST (generate materials)
 ```
 
-Create the directory structure:
-```sh
-mkdir -p apps/steadyhand/app/api/{auth/\[...nextauth\],auth/signup,experiences/\[id\],applications/\[id\]/draft}
+**`app/api/chat/route.ts` — Chat endpoint details:**
+
+Uses the Vercel AI SDK (`ai` package, already installed in Step 3.3).
+
+```ts
+// Pseudocode outline
+import { streamText } from "ai"
+import { openai } from "@ai-sdk/openai"
+
+export async function POST(req: Request) {
+  const { messages } = await req.json()
+  const session = await auth() // Auth.js session check
+
+  const result = streamText({
+    model: openai("gpt-4o"),
+    system: `You are a career coach. When the user shares a professional
+      experience or story, use the saveExperienceToMemoryBank tool to
+      extract STAR-structured data and save it.`,
+    messages,
+    tools: {
+      saveExperienceToMemoryBank: {
+        description:
+          "Extract a professional experience from the conversation, " +
+          "structure it in STAR format, generate an embedding, and " +
+          "save it to the user's Memory Bank.",
+        parameters: z.object({
+          rawInput: z.string(),
+          situation: z.string(),
+          task: z.string(),
+          action: z.string(),
+          result: z.string(),
+          skills: z.array(z.string()),
+        }),
+        execute: async (params) => {
+          // 1. Generate embedding via lib/llm/embeddings.ts
+          // 2. Insert into `experiences` table via @resonance/db
+          // 3. Return confirmation to the model
+        },
+      },
+    },
+  })
+
+  return result.toDataStreamResponse()
+}
 ```
 
-### Step 3.5 — Page structure
+Install the OpenAI provider for the Vercel AI SDK:
+```sh
+pnpm --filter steadyhand add @ai-sdk/openai
+```
+
+**`app/api/experiences/route.ts`** — Read-only `GET` endpoint. Returns the authenticated user's saved experiences for display in the Memory Bank panel. No `POST`/`PUT`/`DELETE` — creation is handled by the chat tool, and editing/deletion can be added later as needed.
+
+Create the directory structure:
+```sh
+mkdir -p apps/steadyhand/app/api/{auth/\[...nextauth\],auth/signup,chat,experiences,applications/\[id\]/draft}
+```
+
+### Step 3.5 — Page structure (Chat-First Layout)
+
+The dashboard's primary view is the conversational AI coach. The Memory Bank is a display/context panel (split-screen or drawer) — not a data-entry form.
 
 ```
 app/
@@ -490,10 +550,12 @@ app/
 │   ├── login/page.tsx
 │   └── signup/page.tsx
 ├── dashboard/
-│   ├── layout.tsx               # Sidebar nav + topbar shell
-│   ├── page.tsx                 # Dashboard home
+│   ├── layout.tsx               # Shell with sidebar nav + topbar
+│   ├── page.tsx                 # Dashboard home — redirects to chat or shows overview
+│   ├── chat/
+│   │   └── page.tsx             # Primary view: AI career coach conversation
 │   ├── memory/
-│   │   └── page.tsx             # Memory Bank list + add
+│   │   └── page.tsx             # Memory Bank — read-only list of saved experiences
 │   └── applications/
 │       ├── page.tsx             # Applications list
 │       └── [id]/page.tsx        # Application detail (JD + fit + drafts)
@@ -501,17 +563,31 @@ app/
 └── page.tsx                     # Landing / redirect to dashboard
 ```
 
+`/dashboard/chat/page.tsx` is the main workspace. It renders:
+- A full-height chat interface (left/center) with the AI career coach
+- A collapsible Memory Bank panel (right side or drawer) showing experiences saved during the conversation, updated in real-time
+
+`/dashboard/memory/page.tsx` is a standalone browse view of all saved experiences — useful for review, but not the primary data-entry path.
+
 Create the directory structure:
 ```sh
-mkdir -p apps/steadyhand/app/{"\(auth\)"/{login,signup},dashboard/{memory,applications/\[id\]}}
+mkdir -p apps/steadyhand/app/{"\(auth\)"/{login,signup},dashboard/{chat,memory,applications/\[id\]}}
 ```
 
-### Step 3.6 — App-specific components
+### Step 3.6 — App-specific components (Chat-First UI)
+
+No Memory Bank input forms. Experience data entry happens through conversation; Memory Bank components are display-only.
 
 ```
 components/
-├── ui/                          # App-specific UI (or re-exports from @resonance/ui)
-├── memory/                      # Memory Bank components
+├── chat/                        # Chat interface components
+│   ├── ChatWindow.tsx           # Main chat container — message list + input, uses useChat() from Vercel AI SDK
+│   ├── ChatInput.tsx            # Text input with send button + dictation (Web Speech API) toggle
+│   └── MessageBubble.tsx        # Individual message — renders user/assistant/tool-result variants
+├── memory/                      # Memory Bank display components (read-only)
+│   ├── ExperienceCard.tsx       # Compact card showing STAR summary, skills badges — used in sidebar panel
+│   ├── ExperienceList.tsx       # Scrollable list of ExperienceCards for the Memory Bank panel/drawer
+│   └── MemoryBankPanel.tsx      # Collapsible right-side panel or drawer wrapping ExperienceList
 ├── applications/                # Application flow components
 │   ├── ParsedJD.tsx
 │   ├── FitAnalysis.tsx
@@ -520,9 +596,18 @@ components/
 └── layout/                      # Shell, sidebar, nav
 ```
 
+**Chat component notes:**
+- `ChatWindow.tsx` uses `useChat()` from `ai/react` (Vercel AI SDK) to manage message state, streaming, and tool call rendering
+- `ChatInput.tsx` includes a microphone toggle for voice-to-text via the Web Speech API — important for users who prefer dictating stories aloud
+- `MessageBubble.tsx` handles three variants: user messages, assistant messages, and tool-result confirmations (e.g., "Saved experience: Led migration to microservices")
+
+**Memory Bank component notes:**
+- `ExperienceCard.tsx` is a read-only display card. It shows the experience title, STAR summary, and skill badges. No edit/delete controls in MVP — add later if needed.
+- `MemoryBankPanel.tsx` sits alongside the chat in a split-screen layout (desktop) or slides in as a drawer (mobile). It updates in real-time when the chat tool saves a new experience.
+
 Create the directory structure:
 ```sh
-mkdir -p apps/steadyhand/components/{ui,memory,applications,layout}
+mkdir -p apps/steadyhand/components/{chat,memory,applications,layout}
 ```
 
 ### Step 3.7 — E2E testing (Playwright)
