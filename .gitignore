@@ -13,6 +13,9 @@ out/
 .next/
 next-env.d.ts
 
+# Storybook
+storybook-static/
+
 # Turborepo
 .turbo/
 

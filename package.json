@@ -4,10 +4,11 @@
   "private": true,
   "packageManager": "pnpm@10.30.2",
   "pnpm": {
-    "onlyBuiltDependencies": []
+    "onlyBuiltDependencies": ["esbuild"]
   },
   "scripts": {
-    "test": "turbo test"
+    "test": "turbo test",
+    "storybook": "turbo storybook"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.0.18",

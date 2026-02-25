@@ -17,6 +17,10 @@
       "dependsOn": ["^build"]
     },
     "db:generate": {},
-    "db:push": {}
+    "db:push": {},
+    "storybook": {
+      "persistent": true,
+      "cache": false
+    }
   }
 }
