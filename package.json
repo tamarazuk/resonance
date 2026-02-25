@@ -4,11 +4,38 @@
   "private": true,
   "packageManager": "pnpm@10.30.2",
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   },
   "scripts": {
-    "test": "turbo test",
-    "storybook": "turbo storybook"
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "build:apps": "turbo run build --filter=./apps/*",
+    "build:packages": "turbo run build --filter=./packages/*",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint -- --fix",
+    "test": "turbo run test",
+    "test:apps": "turbo run test --filter=./apps/*",
+    "test:packages": "turbo run test --filter=./packages/*",
+    "test:watch": "turbo run test -- --watch",
+    "test:coverage": "turbo run test --coverage",
+    "storybook": "turbo run storybook",
+    "storybook:build": "turbo run build-storybook",
+    "prepare": "husky install",
+    "db:generate": "pnpm --filter @resonance/db db:generate",
+    "db:push": "pnpm --filter @resonance/db db:push",
+    "db:studio": "pnpm --filter @resonance/db db:studio",
+    "steadyhand:dev": "pnpm --filter=./apps/steadyhand dev",
+    "steadyhand:build": "pnpm --filter=./apps/steadyhand build",
+    "steadyhand:lint": "pnpm --filter=./apps/steadyhand lint",
+    "steadyhand:test": "pnpm --filter=./apps/steadyhand test",
+    "storybook:dev": "pnpm --filter=./apps/storybook dev",
+    "storybook:build": "pnpm --filter=./apps/storybook build",
+    "ui:dev": "pnpm --filter=./packages/ui dev",
+    "ui:build": "pnpm --filter=./packages/ui build",
+    "ui:lint": "pnpm --filter=./packages/ui lint",
+    "ui:test": "pnpm --filter=./packages/ui test"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.0.18",
