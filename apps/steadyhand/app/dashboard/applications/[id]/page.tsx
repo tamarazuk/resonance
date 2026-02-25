@@ -1,3 +1,4 @@
+import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
 import { Separator } from "@resonance/ui/components/separator"
 import { Badge } from "@resonance/ui/components/badge"
@@ -22,43 +23,67 @@ import {
   EmptyStateAction,
 } from "@resonance/ui/components/empty-state"
 import { Button } from "@resonance/ui/components/button"
+import type { Application, ApplicationStatus } from "@resonance/types"
+import { ParsedJD } from "@/components/applications/ParsedJD"
+import { FitAnalysis } from "@/components/applications/FitAnalysis"
+import { CoverLetter } from "@/components/applications/CoverLetter"
+import { SelectedBullets } from "@/components/applications/SelectedBullets"
 
-/**
- * Application Detail — Parsed JD, Fit Analysis, Material Drafter
- *
- * Displays a single application's details with tabs for:
- * - Job Description (parsed)
- * - Fit Analysis results
- * - Drafted Materials (cover letter + tailored bullets)
- *
- * Data fetching and detail components (ParsedJD, FitAnalysis, CoverLetter,
- * SelectedBullets) will be built in Step 3.6.
- */
+async function getApplication(id: string): Promise<Application | null> {
+  try {
+    const cookieStore = await cookies()
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/applications/${id}`,
+      {
+        headers: { cookie: cookieStore.toString() },
+        cache: "no-store",
+      },
+    )
+    if (!res.ok) return null
+    return res.json()
+  } catch {
+    return null
+  }
+}
+
+const statusLabels: Record<ApplicationStatus, string> = {
+  draft: "Draft",
+  ready_to_apply: "Ready to Apply",
+  applied: "Applied",
+  phone_screen: "Phone Screen",
+  technical_interview: "Technical Interview",
+  final_interview: "Final Interview",
+  offer: "Offer",
+  rejected: "Rejected",
+  withdrawn: "Withdrawn",
+}
+
 export default async function ApplicationDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+  const application = await getApplication(id)
 
-  // TODO: Fetch application from API — for now render scaffold
-  if (!id) {
+  if (!application) {
     notFound()
   }
+
+  const title = application.parsedJD?.title ?? "Application Detail"
+  const company = application.parsedJD?.company
 
   return (
     <div className="flex flex-col gap-6 p-8">
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Application Detail
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           <p className="text-sm text-muted-foreground">
-            Application ID: {id}
+            {company ? `${company} · ` : ""}Application ID: {id}
           </p>
         </div>
-        <Badge variant="outline">Draft</Badge>
+        <Badge variant="outline">{statusLabels[application.status]}</Badge>
       </div>
 
       <Separator />
@@ -71,7 +96,7 @@ export default async function ApplicationDetailPage({
           <TabsTrigger value="materials">Materials</TabsTrigger>
         </TabsList>
 
-        {/* Parsed JD tab — placeholder for ParsedJD component */}
+        {/* Parsed JD tab */}
         <TabsContent value="jd" className="mt-6">
           <Card>
             <CardHeader>
@@ -81,21 +106,25 @@ export default async function ApplicationDetailPage({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <EmptyState>
-                <EmptyStateIcon>
-                  <FileTextIcon className="h-10 w-10" />
-                </EmptyStateIcon>
-                <EmptyStateTitle>Not yet parsed</EmptyStateTitle>
-                <EmptyStateDescription>
-                  The job description will appear here once the scraper
-                  processes the posting URL.
-                </EmptyStateDescription>
-              </EmptyState>
+              {application.parsedJD ? (
+                <ParsedJD data={application.parsedJD} />
+              ) : (
+                <EmptyState>
+                  <EmptyStateIcon>
+                    <FileTextIcon className="h-10 w-10" />
+                  </EmptyStateIcon>
+                  <EmptyStateTitle>Not yet parsed</EmptyStateTitle>
+                  <EmptyStateDescription>
+                    The job description will appear here once the scraper
+                    processes the posting URL.
+                  </EmptyStateDescription>
+                </EmptyState>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Fit Analysis tab — placeholder for FitAnalysis component */}
+        {/* Fit Analysis tab */}
         <TabsContent value="fit" className="mt-6">
           <Card>
             <CardHeader>
@@ -105,26 +134,30 @@ export default async function ApplicationDetailPage({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <EmptyState>
-                <EmptyStateIcon>
-                  <BarChartIcon className="h-10 w-10" />
-                </EmptyStateIcon>
-                <EmptyStateTitle>Analysis pending</EmptyStateTitle>
-                <EmptyStateDescription>
-                  The fit analysis will run after the job description is parsed
-                  and compared against your Memory Bank.
-                </EmptyStateDescription>
-                <EmptyStateAction>
-                  <Button variant="outline" disabled>
-                    Run Analysis
-                  </Button>
-                </EmptyStateAction>
-              </EmptyState>
+              {application.fitAnalysis ? (
+                <FitAnalysis data={application.fitAnalysis} />
+              ) : (
+                <EmptyState>
+                  <EmptyStateIcon>
+                    <BarChartIcon className="h-10 w-10" />
+                  </EmptyStateIcon>
+                  <EmptyStateTitle>Analysis pending</EmptyStateTitle>
+                  <EmptyStateDescription>
+                    The fit analysis will run after the job description is parsed
+                    and compared against your Memory Bank.
+                  </EmptyStateDescription>
+                  <EmptyStateAction>
+                    <Button variant="outline" disabled>
+                      Run Analysis
+                    </Button>
+                  </EmptyStateAction>
+                </EmptyState>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Materials tab — placeholder for CoverLetter + SelectedBullets */}
+        {/* Materials tab */}
         <TabsContent value="materials" className="mt-6">
           <div className="flex flex-col gap-6">
             <Card>
@@ -135,18 +168,24 @@ export default async function ApplicationDetailPage({
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <EmptyState>
-                  <EmptyStateIcon>
-                    <PenIcon className="h-10 w-10" />
-                  </EmptyStateIcon>
-                  <EmptyStateTitle>Not yet drafted</EmptyStateTitle>
-                  <EmptyStateDescription>
-                    Generate a cover letter after the fit analysis is complete.
-                  </EmptyStateDescription>
-                  <EmptyStateAction>
-                    <Button disabled>Generate Draft</Button>
-                  </EmptyStateAction>
-                </EmptyState>
+                {application.draftedMaterials?.coverLetterParagraphs?.length ? (
+                  <CoverLetter
+                    paragraphs={application.draftedMaterials.coverLetterParagraphs}
+                  />
+                ) : (
+                  <EmptyState>
+                    <EmptyStateIcon>
+                      <PenIcon className="h-10 w-10" />
+                    </EmptyStateIcon>
+                    <EmptyStateTitle>Not yet drafted</EmptyStateTitle>
+                    <EmptyStateDescription>
+                      Generate a cover letter after the fit analysis is complete.
+                    </EmptyStateDescription>
+                    <EmptyStateAction>
+                      <Button disabled>Generate Draft</Button>
+                    </EmptyStateAction>
+                  </EmptyState>
+                )}
               </CardContent>
             </Card>
 
@@ -158,16 +197,22 @@ export default async function ApplicationDetailPage({
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <EmptyState>
-                  <EmptyStateIcon>
-                    <ListIcon className="h-10 w-10" />
-                  </EmptyStateIcon>
-                  <EmptyStateTitle>No bullets generated</EmptyStateTitle>
-                  <EmptyStateDescription>
-                    Tailored resume bullets will be generated from your matched
-                    experiences.
-                  </EmptyStateDescription>
-                </EmptyState>
+                {application.draftedMaterials?.resumeBullets?.length ? (
+                  <SelectedBullets
+                    bullets={application.draftedMaterials.resumeBullets}
+                  />
+                ) : (
+                  <EmptyState>
+                    <EmptyStateIcon>
+                      <ListIcon className="h-10 w-10" />
+                    </EmptyStateIcon>
+                    <EmptyStateTitle>No bullets generated</EmptyStateTitle>
+                    <EmptyStateDescription>
+                      Tailored resume bullets will be generated from your matched
+                      experiences.
+                    </EmptyStateDescription>
+                  </EmptyState>
+                )}
               </CardContent>
             </Card>
           </div>

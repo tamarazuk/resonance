@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.33",
+    "@ai-sdk/react": "^3.0.101",
     "@mendable/firecrawl-js": "^4.13.1",
     "@resonance/db": "workspace:*",
     "@resonance/types": "workspace:*",

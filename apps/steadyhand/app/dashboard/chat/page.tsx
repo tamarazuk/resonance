@@ -1,3 +1,11 @@
+"use client"
+
+import { useCallback, useEffect, useState } from "react"
+import type { Experience } from "@resonance/types"
+import { ChatWindow } from "@/components/chat/ChatWindow"
+import { ExperienceCard } from "@/components/memory/ExperienceCard"
+import { ExperienceForm } from "@/components/memory/ExperienceForm"
+import { Button } from "@resonance/ui/components/button"
 import {
   EmptyState,
   EmptyStateIcon,
@@ -11,11 +19,29 @@ import {
  * Split-screen layout:
  * - Left column (60%): Active chat with the AI career coach
  * - Right column (40%): Context/Memory Bank sidebar showing saved experiences
- *
- * Chat components (ChatWindow, ChatInput, ChatMessage) and Memory Bank
- * components (ExperienceCard) will be built in Step 3.6.
  */
 export default function ChatPage() {
+  const [experiences, setExperiences] = useState<Experience[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchExperiences = useCallback(async () => {
+    try {
+      const res = await fetch("/api/experiences")
+      if (res.ok) {
+        const data = await res.json()
+        setExperiences(data)
+      }
+    } catch {
+      // Silently fail — sidebar is non-critical
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchExperiences()
+  }, [fetchExperiences])
+
   return (
     <div className="flex h-full">
       {/* Left column — Chat interface (60%) */}
@@ -25,60 +51,62 @@ export default function ChatPage() {
           <h1 className="text-lg font-semibold">Career Coach</h1>
         </div>
 
-        {/* Chat messages area — placeholder for ChatWindow (Step 3.6) */}
-        <div className="flex flex-1 items-center justify-center p-8">
-          <EmptyState>
-            <EmptyStateIcon>
-              <ChatBubbleIcon className="h-10 w-10" />
-            </EmptyStateIcon>
-            <EmptyStateTitle>Start a conversation</EmptyStateTitle>
-            <EmptyStateDescription>
-              Tell the Career Coach about your professional experiences. It will
-              extract, structure, and save them to your Memory Bank
-              automatically.
-            </EmptyStateDescription>
-          </EmptyState>
-        </div>
-
-        {/* Chat input area — placeholder for ChatInput (Step 3.6) */}
-        <div className="border-t border-border p-4">
-          <div className="flex items-center gap-2 rounded-lg border border-input bg-background px-4 py-3">
-            <span className="flex-1 text-sm text-muted-foreground">
-              Chat input will be implemented in Step 3.6...
-            </span>
-          </div>
-        </div>
+        {/* Chat window */}
+        <ChatWindow onExperienceSaved={fetchExperiences} />
       </div>
 
       {/* Right column — Memory Bank sidebar (40%) */}
       <div className="flex w-2/5 flex-col">
         {/* Sidebar header */}
-        <div className="flex h-14 items-center border-b border-border px-6">
-          <h2 className="text-sm font-semibold">Memory Bank</h2>
-          <span className="ml-2 text-xs text-muted-foreground">
-            Saved Experiences
-          </span>
+        <div className="flex h-14 items-center justify-between border-b border-border px-6">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold">Memory Bank</h2>
+            <span className="text-xs text-muted-foreground">
+              {experiences.length} experience{experiences.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <ExperienceForm
+            onSaved={fetchExperiences}
+            trigger={
+              <Button variant="ghost" size="sm">
+                <PlusIcon className="mr-1 h-3.5 w-3.5" />
+                Manual Entry
+              </Button>
+            }
+          />
         </div>
 
-        {/* Experience cards — placeholder for ExperienceCard list (Step 3.6) */}
+        {/* Experience cards */}
         <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
-          <EmptyState>
-            <EmptyStateIcon>
-              <BrainIcon className="h-10 w-10" />
-            </EmptyStateIcon>
-            <EmptyStateTitle>No experiences yet</EmptyStateTitle>
-            <EmptyStateDescription>
-              Experiences you share in the chat will appear here as structured
-              STAR stories.
-            </EmptyStateDescription>
-          </EmptyState>
+          {loading ? (
+            <div className="flex flex-1 items-center justify-center">
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            </div>
+          ) : experiences.length === 0 ? (
+            <EmptyState>
+              <EmptyStateIcon>
+                <BrainIcon className="h-10 w-10" />
+              </EmptyStateIcon>
+              <EmptyStateTitle>No experiences yet</EmptyStateTitle>
+              <EmptyStateDescription>
+                Experiences you share in the chat will appear here as structured
+                STAR stories.
+              </EmptyStateDescription>
+            </EmptyState>
+          ) : (
+            experiences.map((exp) => (
+              <ExperienceCard key={exp.id} experience={exp} />
+            ))
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-function ChatBubbleIcon({ className }: { className?: string }) {
+// ─── Inline icons ────────────────────────────────────────────────────────────
+
+function PlusIcon({ className }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -90,7 +118,8 @@ function ChatBubbleIcon({ className }: { className?: string }) {
       strokeLinejoin="round"
       className={className}
     >
-      <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z" />
+      <path d="M5 12h14" />
+      <path d="M12 5v14" />
     </svg>
   )
 }
