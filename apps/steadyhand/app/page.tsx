@@ -17,10 +17,10 @@ export default async function Home() {
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <div className="flex size-8 items-center justify-center text-primary">
-              <SteadyHandIcon className="size-7" />
+              <SteadyhandIcon className="size-7" />
             </div>
             <span className="text-xl font-medium tracking-tight text-foreground">
-              SteadyHand
+              Steadyhand
             </span>
           </div>
 
@@ -35,7 +35,7 @@ export default async function Home() {
               className="text-sm font-normal text-muted-foreground transition-colors hover:text-primary"
               href="#why"
             >
-              Why SteadyHand
+              Why Steadyhand
             </a>
           </nav>
 
@@ -151,14 +151,14 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* Why SteadyHand */}
+        {/* Why Steadyhand */}
         <section id="why" className="bg-background py-24">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="grid grid-cols-1 items-center gap-20 lg:grid-cols-2">
               <div className="space-y-10">
                 <div className="space-y-6">
                   <h2 className="text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
-                    Why SteadyHand?
+                    Why Steadyhand?
                   </h2>
                   <p className="text-lg font-light text-muted-foreground">
                     We&rsquo;ve reimagined the job search process to remove
@@ -213,10 +213,10 @@ export default async function Home() {
             <div className="col-span-2 md:col-span-1">
               <div className="mb-6 flex items-center gap-2">
                 <div className="flex size-6 items-center justify-center text-primary">
-                  <SteadyHandIcon className="size-5" />
+                  <SteadyhandIcon className="size-5" />
                 </div>
                 <span className="text-base font-medium text-foreground">
-                  SteadyHand
+                  Steadyhand
                 </span>
               </div>
               <p className="mb-6 text-sm font-light text-muted-foreground">
@@ -326,7 +326,7 @@ export default async function Home() {
 
           <div className="flex flex-col items-center justify-between gap-4 border-t border-border pt-8 md:flex-row">
             <p className="text-sm font-light text-muted-foreground">
-              &copy; {new Date().getFullYear()} SteadyHand. All rights reserved.
+              &copy; {new Date().getFullYear()} Steadyhand. All rights reserved.
             </p>
             <div className="flex gap-8">
               <a
@@ -413,7 +413,7 @@ const whyItems = [
 
 // ─── Icons (inline SVG, Lucide-style) ─────────────────────────────────────────
 
-function SteadyHandIcon({ className }: { className?: string }) {
+function SteadyhandIcon({ className }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
