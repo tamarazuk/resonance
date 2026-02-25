@@ -39,6 +39,7 @@ jobs:
       FIRECRAWL_API_KEY: "fc-ci-placeholder"
 
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
 
       - name: Push database schema
