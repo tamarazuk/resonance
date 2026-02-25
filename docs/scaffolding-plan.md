@@ -542,7 +542,7 @@ mkdir -p apps/steadyhand/app/api/{auth/\[...nextauth\],auth/signup,chat,experien
 
 ### Step 3.5 — Page structure (Chat-First Layout)
 
-The dashboard's primary view is the conversational AI coach. The Memory Bank is a display/context panel (split-screen or drawer) — not a data-entry form.
+The primary interaction model is an AI-native, chat-first interface ("Career Coach"). Traditional data-entry forms are retained as a "Manual Entry" fallback for accessibility and speed. The dashboard home is a triage view surfacing high-priority action items.
 
 ```
 app/
@@ -550,44 +550,54 @@ app/
 │   ├── login/page.tsx
 │   └── signup/page.tsx
 ├── dashboard/
-│   ├── layout.tsx               # Shell with sidebar nav + topbar
-│   ├── page.tsx                 # Dashboard home — redirects to chat or shows overview
+│   ├── layout.tsx               # Standard shell with a left navigation sidebar
+│   ├── page.tsx                 # "Triage Dashboard" (Home) — high-priority action items + active job applications list
 │   ├── chat/
-│   │   └── page.tsx             # Primary view: AI career coach conversation
-│   ├── memory/
-│   │   └── page.tsx             # Memory Bank — read-only list of saved experiences
+│   │   └── page.tsx             # "Career Coach" — split-screen: left col (60%) active chat, right col (40%) Context/Memory Bank sidebar
 │   └── applications/
-│       ├── page.tsx             # Applications list
-│       └── [id]/page.tsx        # Application detail (JD + fit + drafts)
+│       ├── new/page.tsx         # Centered layout: URL input to scrape a JD + "Enter Manually" text-fallback option
+│       └── [id]/page.tsx        # Application detail view (Fit Analysis + Material Drafter)
 ├── layout.tsx                   # Root layout
 └── page.tsx                     # Landing / redirect to dashboard
 ```
 
-`/dashboard/chat/page.tsx` is the main workspace. It renders:
-- A full-height chat interface (left/center) with the AI career coach
-- A collapsible Memory Bank panel (right side or drawer) showing experiences saved during the conversation, updated in real-time
+**`/dashboard/page.tsx` — Triage Dashboard (Home):**
+- Shows a prioritized list of action items (e.g., pending STAR reviews, applications needing follow-up)
+- Renders an `ActiveApplicationsTable` of all in-progress job applications with status indicators
 
-`/dashboard/memory/page.tsx` is a standalone browse view of all saved experiences — useful for review, but not the primary data-entry path.
+**`/dashboard/chat/page.tsx` — Career Coach (Primary Interface):**
+- Split-screen layout. Left column (60%) is the active chat interface with the AI career coach. Right column (40%) is the "Context/Memory Bank" sidebar displaying saved experiences as `ExperienceCard` components, updated in real-time as the chat tool saves new entries.
+- The Memory Bank sidebar is the persistent context panel — not a data-entry surface. Experience creation happens through conversation or via the "Manual Entry" fallback dialog.
+
+**`/dashboard/applications/new/page.tsx` — New Application:**
+- Centered, single-column layout. Primary action is a URL input field that triggers Firecrawl to scrape and parse the job description.
+- Below the URL input, a clear "Enter Manually" text link opens a traditional form dialog for pasting/typing the JD directly — the accessibility and speed fallback.
+
+**`/dashboard/applications/[id]/page.tsx` — Application Detail:**
+- Displays the parsed JD, Fit Analysis results, and the Material Drafter (cover letter + tailored bullets).
 
 Create the directory structure:
 ```sh
-mkdir -p apps/steadyhand/app/{"\(auth\)"/{login,signup},dashboard/{chat,memory,applications/\[id\]}}
+mkdir -p apps/steadyhand/app/{"\(auth\)"/{login,signup},dashboard/{chat,applications/{new,\[id\]}}}
 ```
 
 ### Step 3.6 — App-specific components (Chat-First UI)
 
-No Memory Bank input forms. Experience data entry happens through conversation; Memory Bank components are display-only.
+The chat interface is the primary data-entry path. Traditional form components (e.g., `ExperienceForm.tsx`) are retained as a "Manual Entry" fallback, surfaced inside a dialog rather than as standalone pages. A human-in-the-loop review step ensures AI-generated STAR stories are approved before being saved.
 
 ```
 components/
 ├── chat/                        # Chat interface components
-│   ├── ChatWindow.tsx           # Main chat container — message list + input, uses useChat() from Vercel AI SDK
-│   ├── ChatInput.tsx            # Text input with send button + dictation (Web Speech API) toggle
-│   └── MessageBubble.tsx        # Individual message — renders user/assistant/tool-result variants
-├── memory/                      # Memory Bank display components (read-only)
-│   ├── ExperienceCard.tsx       # Compact card showing STAR summary, skills badges — used in sidebar panel
-│   ├── ExperienceList.tsx       # Scrollable list of ExperienceCards for the Memory Bank panel/drawer
-│   └── MemoryBankPanel.tsx      # Collapsible right-side panel or drawer wrapping ExperienceList
+│   ├── ChatWindow.tsx           # Main chat container — message list + input area, uses useChat() from Vercel AI SDK
+│   ├── ChatMessage.tsx          # Individual message — renders user/assistant/tool-result variants
+│   └── ChatInput.tsx            # Text input with send button + UI placeholder for voice dictation (Web Speech API)
+├── memory/                      # Memory Bank components (display + manual-entry fallback)
+│   ├── ExperienceCard.tsx       # Compact card showing STAR summary + skills badges — used in the right sidebar of the chat split-screen
+│   ├── ExperienceForm.tsx       # Traditional STAR data-entry form — used inside a "Manual Entry" dialog, not as a standalone page
+│   └── StarReviewModal.tsx      # Human-in-the-loop approval dialog — displays AI-generated STAR story for user review/edit before persisting
+├── dashboard/                   # Triage Dashboard components
+│   ├── TriageCard.tsx           # Card for a single high-priority action item (e.g., pending review, follow-up reminder)
+│   └── ActiveApplicationsTable.tsx  # Table listing active job applications with status, company, role, and last activity
 ├── applications/                # Application flow components
 │   ├── ParsedJD.tsx
 │   ├── FitAnalysis.tsx
@@ -598,16 +608,21 @@ components/
 
 **Chat component notes:**
 - `ChatWindow.tsx` uses `useChat()` from `ai/react` (Vercel AI SDK) to manage message state, streaming, and tool call rendering
-- `ChatInput.tsx` includes a microphone toggle for voice-to-text via the Web Speech API — important for users who prefer dictating stories aloud
-- `MessageBubble.tsx` handles three variants: user messages, assistant messages, and tool-result confirmations (e.g., "Saved experience: Led migration to microservices")
+- `ChatMessage.tsx` handles three variants: user messages, assistant messages, and tool-result confirmations (e.g., "Saved experience: Led migration to microservices")
+- `ChatInput.tsx` includes a microphone icon placeholder for future voice-to-text via the Web Speech API — important for users who prefer dictating stories aloud. The placeholder is a non-functional UI element in MVP; implementation is deferred.
 
-**Memory Bank component notes:**
-- `ExperienceCard.tsx` is a read-only display card. It shows the experience title, STAR summary, and skill badges. No edit/delete controls in MVP — add later if needed.
-- `MemoryBankPanel.tsx` sits alongside the chat in a split-screen layout (desktop) or slides in as a drawer (mobile). It updates in real-time when the chat tool saves a new experience.
+**Memory component notes:**
+- `ExperienceCard.tsx` is a read-only display card for the Context/Memory Bank sidebar. Shows the experience title, STAR summary, and skill badges.
+- `ExperienceForm.tsx` is the traditional form for manual STAR data entry. It is **not** rendered as a standalone page — it appears inside a dialog triggered by "Manual Entry" links throughout the app. This preserves a fast, accessible fallback for users who prefer direct form input over chat.
+- `StarReviewModal.tsx` is the human-in-the-loop checkpoint. When the AI chat tool extracts and structures a STAR story, this modal presents it for user review and editing before the experience is persisted to the database. Ensures data quality and user trust.
+
+**Dashboard component notes:**
+- `TriageCard.tsx` represents a single actionable item on the home dashboard (e.g., "Review AI-generated story", "Follow up with Company X").
+- `ActiveApplicationsTable.tsx` renders a sortable table of in-progress job applications with columns for company, role, status, and last activity date.
 
 Create the directory structure:
 ```sh
-mkdir -p apps/steadyhand/components/{chat,memory,applications,layout}
+mkdir -p apps/steadyhand/components/{chat,memory,dashboard,applications,layout}
 ```
 
 ### Step 3.7 — E2E testing (Playwright)
