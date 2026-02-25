@@ -1,11 +1,17 @@
-import type { Meta, StoryObj } from "@storybook/react-vite"
+import type { Meta, StoryObj } from "@storybook/react";
 
-import { Button } from "./button"
+import { Button } from "./button";
 
 const meta = {
   title: "Components/Button",
   component: Button,
   tags: ["autodocs"],
+  args: {
+    children: "Button",
+    variant: "default",
+    size: "default",
+    disabled: false,
+  },
   argTypes: {
     variant: {
       control: "select",
@@ -20,73 +26,71 @@ const meta = {
     },
     size: {
       control: "select",
-      options: ["default", "xs", "sm", "lg", "icon"],
+      options: [
+        "default",
+        "xs",
+        "sm",
+        "lg",
+        "icon",
+        "icon-xs",
+        "icon-sm",
+        "icon-lg",
+      ],
     },
+    children: { control: "text" },
     disabled: { control: "boolean" },
   },
-} satisfies Meta<typeof Button>
+} satisfies Meta<typeof Button>;
 
-export default meta
-type Story = StoryObj<typeof meta>
+export default meta;
+type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  args: {
-    children: "Button",
-  },
-}
+export const Default: Story = {};
 
 export const Outline: Story = {
   args: {
     variant: "outline",
     children: "Outline",
   },
-}
-
-export const Secondary: Story = {
-  args: {
-    variant: "secondary",
-    children: "Secondary",
-  },
-}
-
-export const Ghost: Story = {
-  args: {
-    variant: "ghost",
-    children: "Ghost",
-  },
-}
+};
 
 export const Destructive: Story = {
   args: {
     variant: "destructive",
-    children: "Destructive",
+    children: "Delete",
   },
-}
+};
 
-export const Link: Story = {
+export const Icon: Story = {
   args: {
-    variant: "link",
-    children: "Link",
+    size: "icon",
+    "aria-label": "Add",
+    children: <PlusIcon />,
   },
-}
-
-export const Small: Story = {
-  args: {
-    size: "sm",
-    children: "Small",
-  },
-}
-
-export const Large: Story = {
-  args: {
-    size: "lg",
-    children: "Large",
-  },
-}
+};
 
 export const Disabled: Story = {
   args: {
     children: "Disabled",
     disabled: true,
   },
+};
+
+function PlusIcon() {
+  return (
+    <svg
+      aria-hidden
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-4"
+    >
+      <path d="M5 12h14" />
+      <path d="M12 5v14" />
+    </svg>
+  );
 }
