@@ -1425,6 +1425,7 @@ Security Monitoring:
 | LLM strategy | AI gateway with Claude primary, OpenAI fallback | Additional providers | Cost/reliability or policy requirements |
 | Frontend | Next.js 16+ + Tailwind CSS + Radix UI | Native mobile apps | Product milestone after Phase 2 |
 | Search | PostgreSQL full-text + pg_trgm | Elasticsearch | Query complexity or volume exceeds PG capabilities |
+| Testing | Vitest + React Testing Library (TS), pytest (Python), Supertest + testcontainers (API/DB integration), Playwright (E2E), k6 (load) | None in launch path | N/A |
 
 ### 6.3 Frontend Stack
 

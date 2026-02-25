@@ -487,13 +487,13 @@ GET /api/v1/candidate/jd/:jdId/drafts
 
 ## 7. Testing Requirements
 
-| Category | Scope | Coverage Target |
-|---|---|---|
-| Unit tests | STAR extraction, skill tagging, evidence scoring, consent state machine, fit score calculation, effort categorization | 100% for consent, 80%+ for others |
-| Integration tests | Auth flow, profile CRUD, memory bank CRUD, JD URL parse pipeline, fit analysis pipeline, material drafting pipeline, document import pipeline, embedding generation | 80%+ |
-| E2E tests | Sign up -> paste JD URL -> view fit analysis -> generate cover letter -> export. Sign up -> add experience via conversation -> view structured output | Key happy paths |
-| AI output tests | Golden test sets for STAR extraction, skill tagging, theme classification, JD parsing, fit analysis, material drafting | All golden sets passing |
-| Security tests | Auth token handling, consent enforcement, account deletion cascade | 100% for consent and deletion |
+| Category | Tool | Scope | Coverage Target |
+|---|---|---|---|
+| Unit tests | Vitest (TS) / pytest (Python) | STAR extraction, skill tagging, evidence scoring, consent state machine, fit score calculation, effort categorization | 100% for consent, 80%+ for others |
+| Integration tests | Vitest + Supertest + testcontainers | Auth flow, profile CRUD, memory bank CRUD, JD URL parse pipeline, fit analysis pipeline, material drafting pipeline, document import pipeline, embedding generation | 80%+ |
+| E2E tests | Playwright | Sign up -> paste JD URL -> view fit analysis -> generate cover letter -> export. Sign up -> add experience via conversation -> view structured output | Key happy paths |
+| AI output tests | Vitest + golden test sets | Golden test sets for STAR extraction, skill tagging, theme classification, JD parsing, fit analysis, material drafting | All golden sets passing |
+| Security tests | Vitest + Supertest | Auth token handling, consent enforcement, account deletion cascade | 100% for consent and deletion |
 
 ---
 

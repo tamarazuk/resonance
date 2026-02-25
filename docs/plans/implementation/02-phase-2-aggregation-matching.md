@@ -233,14 +233,14 @@ opportunity.canonicalized:
 
 ## 8. Testing Requirements
 
-| Category | Scope | Coverage Target |
-|---|---|---|
-| Unit tests | Match scoring algorithm, confidence classifier, deduplication fingerprinting | 100% for matching, 80%+ others |
-| Integration tests | Full aggregation pipeline (ingest -> normalize -> dedupe -> embed), matching pipeline (trigger -> score -> persist -> read model) | 80%+ |
-| E2E tests | Candidate views matches, expresses interest, sees updated feed | Key happy paths |
-| AI output tests | Explainability generation conformance to schema | All golden sets passing |
-| Load tests | Match scoring pipeline throughput, pgvector query latency at target data volume | p95 < 200ms for vector search |
-| Moderation tests | Tier 4 quarantine path, abuse classifier accuracy | Quarantine path fully tested |
+| Category | Tool | Scope | Coverage Target |
+|---|---|---|---|
+| Unit tests | Vitest (TS) / pytest (Python) | Match scoring algorithm, confidence classifier, deduplication fingerprinting | 100% for matching, 80%+ others |
+| Integration tests | Vitest + Supertest + testcontainers | Full aggregation pipeline (ingest -> normalize -> dedupe -> embed), matching pipeline (trigger -> score -> persist -> read model) | 80%+ |
+| E2E tests | Playwright | Candidate views matches, expresses interest, sees updated feed | Key happy paths |
+| AI output tests | Vitest + golden test sets | Explainability generation conformance to schema | All golden sets passing |
+| Load tests | k6 | Match scoring pipeline throughput, pgvector query latency at target data volume | p95 < 200ms for vector search |
+| Moderation tests | Vitest + Supertest | Tier 4 quarantine path, abuse classifier accuracy | Quarantine path fully tested |
 
 ---
 

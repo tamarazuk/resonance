@@ -471,15 +471,15 @@ GET /api/v1/internal/model/versions
 
 ## 7. Testing Requirements
 
-| Category | Scope | Coverage Target |
-|---|---|---|
-| Unit tests | Each dimension scorer, composite scorer, confidence classifier, calibration loop | 100% for scoring and calibration |
-| ML evaluation | Golden test sets for two-tower model, per-dimension scorers | All evaluation gates passing |
-| Fairness tests | Statistical parity, equalized odds on test populations | Disparity within approved bounds |
-| Integration tests | Full scoring pipeline end-to-end, model serving, rollback mechanism | 80%+ |
-| Ops console tests | Moderation workflow, dispute resolution, consent audit queries | Key flows tested |
-| Load tests | Two-tower inference latency, scoring pipeline throughput | p95 match scoring < 30s end-to-end |
-| Rollback drill | Model rollback from canary to known-good | Successfully executed |
+| Category | Tool | Scope | Coverage Target |
+|---|---|---|---|
+| Unit tests | Vitest (TS) / pytest (Python) | Each dimension scorer, composite scorer, confidence classifier, calibration loop | 100% for scoring and calibration |
+| ML evaluation | pytest + golden test sets | Golden test sets for two-tower model, per-dimension scorers | All evaluation gates passing |
+| Fairness tests | pytest | Statistical parity, equalized odds on test populations | Disparity within approved bounds |
+| Integration tests | Vitest + Supertest + testcontainers | Full scoring pipeline end-to-end, model serving, rollback mechanism | 80%+ |
+| Ops console tests | Playwright | Moderation workflow, dispute resolution, consent audit queries | Key flows tested |
+| Load tests | k6 | Two-tower inference latency, scoring pipeline throughput | p95 match scoring < 30s end-to-end |
+| Rollback drill | Manual + k6 | Model rollback from canary to known-good | Successfully executed |
 
 ---
 

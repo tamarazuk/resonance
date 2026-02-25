@@ -160,7 +160,7 @@ These workstreams run continuously and are detailed in `05-infrastructure-and-de
 - **AI Gateway:** LLM abstraction, prompt versioning, schema-constrained outputs
 - **Observability:** Structured logging, distributed tracing, metrics, alerting
 - **Security:** PII encryption, network security, WAF, vulnerability scanning
-- **Testing:** Unit, integration, E2E, load testing, golden sets for ML
+- **Testing:** Vitest (TS unit/integration), pytest (Python), React Testing Library (component), Supertest (API integration), testcontainers (DB integration), Playwright (E2E), k6 (load), golden sets for ML
 - **Feature Flags:** LaunchDarkly/Unleash-based rollout control, kill switches, flag audit logging
 - **API Versioning:** `/v1/` prefix convention, OpenAPI spec generation, backward-compatibility enforcement
 - **LLM Cost Controls:** Per-request cost tracking, budget threshold alerts, model tiering optimization

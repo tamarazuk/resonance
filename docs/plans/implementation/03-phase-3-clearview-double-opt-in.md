@@ -373,14 +373,14 @@ All transitions are policy-enforced and audit-logged.
 
 ## 7. Testing Requirements
 
-| Category | Scope | Coverage Target |
-|---|---|---|
-| Unit tests | Introduction state machine (all transitions), policy engine (all rules), reason code recording, materiality diff classification (material vs non-material changes) | 100% for intro state machine, policy, and diff engine |
-| Integration tests | Employer auth + RBAC, role definition flow, posting analysis, employer match feed, introduction orchestration end-to-end, role snapshot creation on introduction, materiality diff triggering on role update with active snapshots | 80%+ |
-| E2E tests | Full lifecycle: candidate matches -> mutual interest -> introduction created. One-sided interest -> no intro. | All critical paths |
-| Security tests | Row-level security (employer isolation), RBAC enforcement, policy gate bypass attempts | 100% |
-| Consent tests | Revocation cascade: matches closed, intros cancelled, feeds updated | 100% |
-| Notification tests | No notification leaks (one-sided interest must not notify other party) | 100% |
+| Category | Tool | Scope | Coverage Target |
+|---|---|---|---|
+| Unit tests | Vitest (TS) / pytest (Python) | Introduction state machine (all transitions), policy engine (all rules), reason code recording, materiality diff classification (material vs non-material changes) | 100% for intro state machine, policy, and diff engine |
+| Integration tests | Vitest + Supertest + testcontainers | Employer auth + RBAC, role definition flow, posting analysis, employer match feed, introduction orchestration end-to-end, role snapshot creation on introduction, materiality diff triggering on role update with active snapshots | 80%+ |
+| E2E tests | Playwright | Full lifecycle: candidate matches -> mutual interest -> introduction created. One-sided interest -> no intro. | All critical paths |
+| Security tests | Vitest + Supertest | Row-level security (employer isolation), RBAC enforcement, policy gate bypass attempts | 100% |
+| Consent tests | Vitest + Supertest + testcontainers | Revocation cascade: matches closed, intros cancelled, feeds updated | 100% |
+| Notification tests | Vitest + Supertest | No notification leaks (one-sided interest must not notify other party) | 100% |
 
 ---
 
