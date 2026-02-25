@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@resonance/ui/components/button"
-import { Input } from "@resonance/ui/components/input"
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@resonance/ui/components/button";
+import { Input } from "@resonance/ui/components/input";
 import {
   Card,
   CardHeader,
@@ -13,52 +13,75 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from "@resonance/ui/components/card"
+} from "@resonance/ui/components/card";
 
 export default function SignupPage() {
-  const router = useRouter()
+  const router = useRouter();
 
-  const [fullName, setFullName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function getErrorMessage(res: Response): Promise<string> {
+    const fallback = "Unable to create account right now. Please try again.";
+    const contentType = res.headers.get("content-type") ?? "";
+
+    if (contentType.includes("application/json")) {
+      const data = (await res.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      if (typeof data?.error === "string" && data.error.length > 0) {
+        return data.error;
+      }
+    }
+
+    const text = await res.text().catch(() => "");
+    return text.trim() || fallback;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
 
-    const res = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, fullName: fullName || undefined }),
-    })
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          fullName: fullName || undefined,
+        }),
+      });
 
-    if (!res.ok) {
-      const data = await res.json()
-      setError(data.error ?? "Something went wrong")
-      setLoading(false)
-      return
+      if (!res.ok) {
+        setError(await getErrorMessage(res));
+        return;
+      }
+
+      // Auto-login after signup
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        // Account created but auto-login failed — redirect to login
+        router.push("/login");
+        return;
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      setError("Unable to create account right now. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    // Auto-login after signup
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    })
-
-    setLoading(false)
-
-    if (result?.error) {
-      // Account created but auto-login failed — redirect to login
-      router.push("/login")
-      return
-    }
-
-    router.push("/dashboard")
-    router.refresh()
   }
 
   return (
@@ -72,9 +95,7 @@ export default function SignupPage() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="flex flex-col gap-4">
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
+            {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="flex flex-col gap-2">
               <label htmlFor="fullName" className="text-sm font-medium">
                 Full name
@@ -126,7 +147,10 @@ export default function SignupPage() {
             </Button>
             <p className="text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link href="/login" className="text-primary underline underline-offset-4">
+              <Link
+                href="/login"
+                className="text-primary underline underline-offset-4"
+              >
                 Sign in
               </Link>
             </p>
@@ -134,5 +158,5 @@ export default function SignupPage() {
         </form>
       </Card>
     </div>
-  )
+  );
 }
