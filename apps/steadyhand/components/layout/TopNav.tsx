@@ -25,10 +25,10 @@ export function TopNav({ userInitial }: { userInitial: string }) {
       <div className="flex items-center gap-8">
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <div className="flex size-8 items-center justify-center rounded-lg bg-secondary text-primary">
-            <SteadyHandIcon className="size-5" />
+            <SteadyhandIcon className="size-5" />
           </div>
           <span className="text-lg font-semibold tracking-tight text-foreground">
-            SteadyHand
+            Steadyhand
           </span>
         </Link>
 
@@ -85,7 +85,7 @@ export function TopNav({ userInitial }: { userInitial: string }) {
 
 // ─── Icons ──────────────────────────────────────────────────────────────────────
 
-function SteadyHandIcon({ className }: { className?: string }) {
+function SteadyhandIcon({ className }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

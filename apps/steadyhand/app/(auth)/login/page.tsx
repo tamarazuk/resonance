@@ -47,7 +47,7 @@ export default function LoginPage() {
         <Link href="/" className="flex items-center gap-2.5">
           <LeafIcon className="size-6 text-primary" />
           <span className="text-base font-semibold tracking-tight text-foreground">
-            SteadyHand
+            Steadyhand
           </span>
         </Link>
         <nav className="hidden sm:flex items-center gap-6">
@@ -172,7 +172,7 @@ export default function LoginPage() {
         <span className="text-xs text-muted-foreground">Help</span>
       </footer>
       <p className="pb-4 text-center text-xs text-muted-foreground">
-        &copy; 2024 SteadyHand Inc.
+        &copy; 2024 Steadyhand Inc.
       </p>
     </div>
   );
@@ -195,7 +195,13 @@ function LeafIcon({ className }: { className?: string }) {
       <path d="M7 20h10" />
       <path d="M10 20c5.5-2.5.8-6.4 3-10" />
       <path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z" />
-      <path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z" />
+      <path
+        d="M14.3 6.2
+      C12.8 7.8 12.6 9.6 13 10.8
+      C15.3 10.6 17 9.8 18.2 8.6
+      C19.4 7.4 20 5.8 20 4
+      C17.6 4.1 15.8 5 14.3 6.2Z"
+      />
     </svg>
   );
 }
