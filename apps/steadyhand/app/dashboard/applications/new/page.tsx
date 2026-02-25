@@ -59,9 +59,24 @@ export default function NewApplicationPage() {
     setError(null);
     setLoading(true);
 
-    // TODO: Add manual JD submission endpoint when ready
+    const res = await fetch("/api/applications", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ manualJD: manualJD.trim() }),
+    });
+
     setLoading(false);
+
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error ?? "Failed to create application");
+      return;
+    }
+
+    const application = await res.json();
     setDialogOpen(false);
+    setManualJD("");
+    router.push(`/dashboard/applications/${application.id}`);
   }
 
   return (
@@ -168,6 +183,11 @@ export default function NewApplicationPage() {
                         </DialogDescription>
                       </DialogHeader>
                       <div className="py-4">
+                        {error && (
+                          <p className="mb-3 text-sm text-destructive">
+                            {error}
+                          </p>
+                        )}
                         <Textarea
                           placeholder="Paste the job description here..."
                           value={manualJD}
