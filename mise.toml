@@ -23,9 +23,7 @@ run = """
 docker compose up -d
 portless proxy start
 trap 'kill 0' EXIT
-portless steadyhand pnpm --filter=steadyhand dev &
-sleep 2
-portless storybook pnpm --filter=storybook dev &
+portless steadyhand pnpm steadyhand:dev &
 wait
 """
 

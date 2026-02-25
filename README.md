@@ -18,11 +18,11 @@ The result is a massive, ongoing misallocation of human potential.
 
 Resonance operates as three interconnected systems:
 
-| System | Purpose |
-|--------|---------|
-| **Steadyhand** (Candidate Engine) | Builds a rich professional identity, delivers fit analysis and tailored materials for any job posting |
-| **Clearview** (Employer Engine) | Helps companies articulate what they truly need beyond the job posting |
-| **Resonance Core** (Matching Protocol) | Six-dimension matching with double opt-in introductions — humans decide, AI discovers |
+| System                                 | Purpose                                                                                               |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Steadyhand** (Candidate Engine)      | Builds a rich professional identity, delivers fit analysis and tailored materials for any job posting |
+| **Clearview** (Employer Engine)        | Helps companies articulate what they truly need beyond the job posting                                |
+| **Resonance Core** (Matching Protocol) | Six-dimension matching with double opt-in introductions — humans decide, AI discovers                 |
 
 The key insight: Steadyhand delivers standalone value from day one. A candidate can paste any job description from anywhere on the internet and immediately receive fit analysis, effort estimation, and tailored application materials. No employer participation required.
 
@@ -70,7 +70,7 @@ Add your experiences     │
 
 I approached this project not just as a coding assessment, but as a real-world product launch.
 
-> *A Senior engineer focuses on building the system right. A Staff engineer focuses on ensuring the right system is being built.*
+> _A Senior engineer focuses on building the system right. A Staff engineer focuses on ensuring the right system is being built._
 
 To demonstrate this, I separated my process into two distinct phases:
 
@@ -82,16 +82,16 @@ To demonstrate this, I separated my process into two distinct phases:
 
 ## ⚖️ Intentional Technical Debt (Scope Decisions)
 
-| End-State Architecture | MVP Implementation | Prioritization Rationale |
-|------------------------|--------------------|--------------------------|
-| Fastify + separate Python ML service | Next.js API routes (monolith) | One runtime, one deploy target — no service mesh at this scale |
-| TypeORM with CQRS | Drizzle ORM (direct queries) | Type-safe, lightweight, native pgvector — no read/write separation needed yet |
-| Redis + BullMQ job queues | Request-scoped LLM calls | <1K rows, <100 concurrent users — async queues add complexity without value |
-| OAuth + social login | Email/password (NextAuth Credentials) | Proves auth works; OAuth is additive, not architectural |
-| AES-256-GCM PII encryption | PostgreSQL disk-level encryption | Documented technical debt with Phase 2 remediation plan |
-| Conversation capture (WebSocket) | Manual text input | Core STAR structuring works the same; input method is a UX enhancement |
-| Prep Engine, Follow-Up Manager | Fit analysis + material drafting | Focused on the activation hook: the moment a candidate sees their first fit analysis |
-| AWS multi-region with DR | Vercel + managed Postgres | Right-sized infrastructure for an MVP |
+| End-State Architecture               | MVP Implementation                    | Prioritization Rationale                                                             |
+| ------------------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------ |
+| Fastify + separate Python ML service | Next.js API routes (monolith)         | One runtime, one deploy target — no service mesh at this scale                       |
+| TypeORM with CQRS                    | Drizzle ORM (direct queries)          | Type-safe, lightweight, native pgvector — no read/write separation needed yet        |
+| Redis + BullMQ job queues            | Request-scoped LLM calls              | <1K rows, <100 concurrent users — async queues add complexity without value          |
+| OAuth + social login                 | Email/password (NextAuth Credentials) | Proves auth works; OAuth is additive, not architectural                              |
+| AES-256-GCM PII encryption           | PostgreSQL disk-level encryption      | Documented technical debt with Phase 2 remediation plan                              |
+| Conversation capture (WebSocket)     | Manual text input                     | Core STAR structuring works the same; input method is a UX enhancement               |
+| Prep Engine, Follow-Up Manager       | Fit analysis + material drafting      | Focused on the activation hook: the moment a candidate sees their first fit analysis |
+| AWS multi-region with DR             | Vercel + managed Postgres             | Right-sized infrastructure for an MVP                                                |
 
 _"Crucially, the boundaries of these shortcuts are strictly defined. Nothing here needs to be thrown away when the platform scales to the target architecture."_
 
@@ -136,21 +136,21 @@ The irreducible core: **sign up, add experiences, paste a JD, get a fit score, g
 
 ### Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16 (App Router, Turbopack) |
-| Language | TypeScript (strict mode) |
-| Database | PostgreSQL + pgvector + pgcrypto |
-| ORM | Drizzle (type-safe, native vector support) |
-| Auth | Auth.js v5 (Credentials provider, JWT sessions) |
-| LLM | OpenAI gpt-4o (structuring/analysis), text-embedding-3-small (embeddings) |
-| Scraping | Firecrawl (managed, handles JS rendering + anti-bot) |
-| Streaming | Vercel AI SDK |
-| Validation | Zod (shared between API and frontend) |
-| UI | Tailwind CSS v4 + shadcn/ui (Base UI primitives) |
-| Monorepo | Turborepo + pnpm workspaces |
-| Toolchain | mise (Node.js 24, pnpm 10) |
-| Infrastructure | Docker Compose (local dev), Vercel (production) |
+| Layer          | Technology                                                                |
+| -------------- | ------------------------------------------------------------------------- |
+| Framework      | Next.js 16 (App Router, Turbopack)                                        |
+| Language       | TypeScript (strict mode)                                                  |
+| Database       | PostgreSQL + pgvector + pgcrypto                                          |
+| ORM            | Drizzle (type-safe, native vector support)                                |
+| Auth           | Auth.js v5 (Credentials provider, JWT sessions)                           |
+| LLM            | OpenAI gpt-4o (structuring/analysis), text-embedding-3-small (embeddings) |
+| Scraping       | Firecrawl (managed, handles JS rendering + anti-bot)                      |
+| Streaming      | Vercel AI SDK                                                             |
+| Validation     | Zod (shared between API and frontend)                                     |
+| UI             | Tailwind CSS v4 + shadcn/ui (Base UI primitives)                          |
+| Monorepo       | Turborepo + pnpm workspaces                                               |
+| Toolchain      | mise (Node.js 24, pnpm 10)                                                |
+| Infrastructure | Docker Compose (local dev), Vercel (production)                           |
 
 ### Monorepo Structure
 
@@ -184,36 +184,55 @@ resonance/
 
 ### Prerequisites
 
-- [mise](https://mise.jdx.dev/) (manages Node.js 24 + pnpm 10)
+- Node.js 24
+- pnpm 10
 - [Docker](https://www.docker.com/) (for local PostgreSQL + pgvector)
+- [mise](https://mise.jdx.dev/) (optional convenience wrapper for local tasks)
 
 ### Setup
 
 ```sh
-# Install toolchain
+# Option A: with mise
 mise install
 
 # Install deps, start DB, apply schema — all in one command
 mise run setup
 ```
 
+```sh
+# Option B: without mise
+pnpm install
+docker compose up -d
+pnpm db:push
+```
+
 ### Development
 
 ```sh
-# Start Docker + dev server
+# With mise (starts Docker + steadyhand through portless)
 mise run dev
+```
+
+```sh
+# Without mise
+docker compose up -d
+pnpm dev            # steadyhand
+pnpm storybook:dev  # storybook
+
+# Run both app dev servers via Turborepo (no portless domains)
+pnpm dev:all
 ```
 
 ### Environment Variables
 
 Copy `.env.example` to `.env` and configure:
 
-| Variable | Purpose |
-|----------|---------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `AUTH_SECRET` | Auth.js session encryption |
-| `OPENAI_API_KEY` | LLM structuring, analysis, embeddings |
-| `FIRECRAWL_API_KEY` | Job posting URL scraping |
+| Variable            | Purpose                               |
+| ------------------- | ------------------------------------- |
+| `DATABASE_URL`      | PostgreSQL connection string          |
+| `AUTH_SECRET`       | Auth.js session encryption            |
+| `OPENAI_API_KEY`    | LLM structuring, analysis, embeddings |
+| `FIRECRAWL_API_KEY` | Job posting URL scraping              |
 
 ---
 
@@ -234,12 +253,12 @@ These aren't aspirational — they're enforced in the code:
 
 The MVP validates the core value loop. The full plan extends to a two-sided marketplace:
 
-| Phase | Duration | Scope |
-|-------|----------|-------|
-| **Phase 1** — Steadyhand MVP | 8 weeks | Full candidate engine: conversation capture, prep engine, follow-up manager, cognitive load protection |
-| **Phase 2** — Aggregation + Matching | 4 weeks | Job aggregation from multiple sources, basic matching pipeline, candidate match feed |
-| **Phase 3** — Clearview + Double Opt-In | 5 weeks | Employer engine, role profiles, double opt-in introduction protocol |
-| **Phase 4** — Resonance Core Full | 4 weeks | Six-dimension scoring, fairness monitoring, ops console |
+| Phase                                   | Duration | Scope                                                                                                  |
+| --------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------ |
+| **Phase 1** — Steadyhand MVP            | 8 weeks  | Full candidate engine: conversation capture, prep engine, follow-up manager, cognitive load protection |
+| **Phase 2** — Aggregation + Matching    | 4 weeks  | Job aggregation from multiple sources, basic matching pipeline, candidate match feed                   |
+| **Phase 3** — Clearview + Double Opt-In | 5 weeks  | Employer engine, role profiles, double opt-in introduction protocol                                    |
+| **Phase 4** — Resonance Core Full       | 4 weeks  | Six-dimension scoring, fairness monitoring, ops console                                                |
 
 Detailed plans for each phase are in [`docs/plans/implementation/`](docs/plans/implementation/).
 
@@ -247,15 +266,15 @@ Detailed plans for each phase are in [`docs/plans/implementation/`](docs/plans/i
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [Product Requirements](docs/prd/resonance-prd-v2.docx.md) | Full PRD covering both sides of the marketplace |
-| [System Architecture](docs/architecture/resonance-architecture.md) | End-state architecture for all three engines |
+| Document                                                                       | Description                                              |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| [Product Requirements](docs/prd/resonance-prd-v2.docx.md)                      | Full PRD covering both sides of the marketplace          |
+| [System Architecture](docs/architecture/resonance-architecture.md)             | End-state architecture for all three engines             |
 | [Implementation Plan](docs/plans/implementation/00-implementation-overview.md) | 25-week phased roadmap with milestones and exit criteria |
-| [MVP Plan](docs/plans/MVP/00-mvp-overview.md) | 7-day build plan with parallel execution tracks |
-| [MVP Data Schema](docs/plans/MVP/01-data-schema.md) | Database schema, TypeScript interfaces, Zod validation |
-| [Parallel Tracks](docs/plans/MVP/02-parallel-tracks.md) | 4-track parallel development strategy |
-| [Day-by-Day Schedule](docs/plans/MVP/03-day-by-day-schedule.md) | Detailed daily deliverables and sync points |
+| [MVP Plan](docs/plans/MVP/00-mvp-overview.md)                                  | 7-day build plan with parallel execution tracks          |
+| [MVP Data Schema](docs/plans/MVP/01-data-schema.md)                            | Database schema, TypeScript interfaces, Zod validation   |
+| [Parallel Tracks](docs/plans/MVP/02-parallel-tracks.md)                        | 4-track parallel development strategy                    |
+| [Day-by-Day Schedule](docs/plans/MVP/03-day-by-day-schedule.md)                | Detailed daily deliverables and sync points              |
 
 ---
 

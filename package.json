@@ -10,6 +10,7 @@
   },
   "scripts": {
     "dev": "turbo run dev",
+    "dev:all": "turbo run dev storybook --parallel",
     "build": "turbo run build",
     "build:apps": "turbo run build --filter=./apps/*",
     "build:packages": "turbo run build --filter=./packages/*",
@@ -34,7 +35,7 @@
     "steadyhand:build": "pnpm --filter=./apps/steadyhand build",
     "steadyhand:lint": "pnpm --filter=./apps/steadyhand lint",
     "steadyhand:test": "pnpm --filter=./apps/steadyhand test",
-    "storybook:dev": "pnpm --filter=./apps/storybook dev",
+    "storybook:dev": "pnpm --filter=./apps/storybook storybook",
     "ui:dev": "pnpm --filter=./packages/ui dev",
     "ui:build": "pnpm --filter=./packages/ui build",
     "ui:lint": "pnpm --filter=./packages/ui lint",

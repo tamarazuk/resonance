@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "storybook dev --no-open -p ${PORT:-6006}",
+    "storybook": "storybook dev --no-open -p ${PORT:-6006}",
     "build": "storybook build"
   },
   "devDependencies": {
