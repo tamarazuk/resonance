@@ -42,7 +42,7 @@ export default function DashboardPage() {
             to build your experience bank.
           </EmptyStateDescription>
           <EmptyStateAction>
-            <Button render={<Link href="/dashboard/chat" />}>
+            <Button nativeButton={false} render={<Link href="/dashboard/chat" />}>
               Open Career Coach
             </Button>
           </EmptyStateAction>
@@ -55,7 +55,7 @@ export default function DashboardPage() {
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-medium">Active Applications</h2>
-          <Button variant="outline" size="sm" render={<Link href="/dashboard/applications/new" />}>
+          <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/dashboard/applications/new" />}>
             New Application
           </Button>
         </div>
@@ -70,7 +70,7 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" render={<Link href="/dashboard/applications/new" />}>
+            <Button variant="outline" nativeButton={false} render={<Link href="/dashboard/applications/new" />}>
               Add your first application
             </Button>
           </CardContent>
