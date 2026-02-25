@@ -10,6 +10,8 @@
     "./client": "./src/client.ts"
   },
   "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
@@ -19,8 +21,10 @@
     "postgres": "^3.4.5"
   },
   "devDependencies": {
+    "@resonance/eslint-config": "workspace:*",
     "@resonance/types": "workspace:*",
     "@resonance/typescript-config": "workspace:*",
-    "drizzle-kit": "^0.28.0"
+    "drizzle-kit": "^0.28.0",
+    "eslint": "^10.0.2"
   }
 }

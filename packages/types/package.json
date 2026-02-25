@@ -2,6 +2,10 @@
   "name": "@resonance/types",
   "version": "0.0.0",
   "private": true,
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit"
+  },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
@@ -11,6 +15,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@resonance/typescript-config": "workspace:*"
+    "@resonance/eslint-config": "workspace:*",
+    "@resonance/typescript-config": "workspace:*",
+    "eslint": "^10.0.2"
   }
 }
