@@ -25,6 +25,7 @@
     "@resonance/eslint-config": "workspace:*",
     "@resonance/types": "workspace:*",
     "@resonance/typescript-config": "workspace:*",
+    "@types/node": "^22.0.0",
     "drizzle-kit": "^0.28.0",
     "eslint": "^10.0.2"
   }
