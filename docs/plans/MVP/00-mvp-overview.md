@@ -12,14 +12,15 @@ Steadyhand is a standalone AI-native candidate profiling and job application ass
 
 ### IN Scope (4 Core Features)
 
-| # | Feature | Description |
-|---|---------|-------------|
-| 1 | **Memory Bank** | CRUD for professional experiences. LLM structures raw input into STAR format. Vector embeddings generated and stored via `pgvector`. |
-| 2 | **External JD URL Parser** | Backend accepts a URL, fetches page content via Firecrawl managed scraping API (handles JS rendering, anti-bot bypass), LLM extracts structured job description (title, company, requirements, responsibilities, qualifications). |
-| 3 | **Fit & Effort Estimation** | Cosine similarity between JD embedding and Memory Bank embeddings. LLM generates qualitative fit analysis + effort estimate (gap analysis). |
-| 4 | **Material Drafting** | LLM generates tailored cover letter. Selects and rewrites top resume bullets ranked by relevance to the JD. |
+| #   | Feature                     | Description                                                                                                                                                                                                                       |
+| --- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Memory Bank**             | CRUD for professional experiences. LLM structures raw input into STAR format. Vector embeddings generated and stored via `pgvector`.                                                                                              |
+| 2   | **External JD URL Parser**  | Backend accepts a URL, fetches page content via Firecrawl managed scraping API (handles JS rendering, anti-bot bypass), LLM extracts structured job description (title, company, requirements, responsibilities, qualifications). |
+| 3   | **Fit & Effort Estimation** | Cosine similarity between JD embedding and Memory Bank embeddings. LLM generates qualitative fit analysis + effort estimate (gap analysis).                                                                                       |
+| 4   | **Material Drafting**       | LLM generates tailored cover letter. Selects and rewrites top resume bullets ranked by relevance to the JD.                                                                                                                       |
 
 **Supporting infrastructure (also in scope):**
+
 - Next.js App Router (TypeScript strict mode)
 - PostgreSQL + pgvector
 - Email/password auth via NextAuth.js (Credentials provider, JWT sessions)
@@ -45,28 +46,28 @@ Steadyhand is a standalone AI-native candidate profiling and job application ass
 
 ## Key Technical Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| **ORM** | Drizzle | Type-safe, lightweight, native pgvector support via `drizzle-orm/pg-core`. |
-| **Auth** | NextAuth.js v5 (Credentials) | Minimal config. JWT session strategy. No OAuth complexity for MVP. |
-| **LLM** | OpenAI `gpt-4o` for structuring/analysis, `text-embedding-3-small` for embeddings | Best cost/quality tradeoff. Claude as fallback for drafting if tone is better. |
-| **Scraping** | Firecrawl managed scraping API (`@mendable/firecrawl-js`) | Handles JS rendering, Cloudflare/DataDome anti-bot, and dynamic SPAs out of the box. Returns clean markdown — no `cheerio` heuristics or custom HTML parsing needed. Graceful fallback to raw text paste. |
-| **Embedding dim** | 1536 (`text-embedding-3-small`) | Standard dimension. Exact nearest-neighbor search sufficient at MVP scale (<1K rows). |
-| **Streaming** | Vercel AI SDK (`ai` package) | Native Next.js streaming for cover letter generation. |
-| **Validation** | Zod | Shared schemas between API validation and frontend forms. |
+| Decision          | Choice                                                                            | Rationale                                                                                                                                                                                                 |
+| ----------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ORM**           | Drizzle                                                                           | Type-safe, lightweight, native pgvector support via `drizzle-orm/pg-core`.                                                                                                                                |
+| **Auth**          | NextAuth.js v5 (Credentials)                                                      | Minimal config. JWT session strategy. No OAuth complexity for MVP.                                                                                                                                        |
+| **LLM**           | OpenAI `gpt-4o` for structuring/analysis, `text-embedding-3-small` for embeddings | Best cost/quality tradeoff. Claude as fallback for drafting if tone is better.                                                                                                                            |
+| **Scraping**      | Firecrawl managed scraping API (`@mendable/firecrawl-js`)                         | Handles JS rendering, Cloudflare/DataDome anti-bot, and dynamic SPAs out of the box. Returns clean markdown — no `cheerio` heuristics or custom HTML parsing needed. Graceful fallback to raw text paste. |
+| **Embedding dim** | 1536 (`text-embedding-3-small`)                                                   | Standard dimension. Exact nearest-neighbor search sufficient at MVP scale (<1K rows).                                                                                                                     |
+| **Streaming**     | Vercel AI SDK (`ai` package)                                                      | Native Next.js streaming for cover letter generation.                                                                                                                                                     |
+| **Validation**    | Zod                                                                               | Shared schemas between API validation and frontend forms.                                                                                                                                                 |
 
 ---
 
 ## Risk Register & Mitigations
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|-----------|
-| **Scraper blocked by JS-rendered pages / anti-bot** | Low | Medium | Firecrawl handles JS rendering and anti-bot (Cloudflare, DataDome) natively. Residual risk: Firecrawl may still fail on some sites (e.g., login-walled pages). Fallback: manual paste of JD text into a textarea, built on Day 1 as the baseline. |
-| **LLM output quality inconsistent** | Medium | High | Structured output mode (`response_format: { type: "json_schema" }`). Zod validation on all LLM responses. Retry with temperature adjustment on parse failure. |
-| **Integration merge conflicts across tracks** | Medium | Medium | All tracks work in isolated directories (`lib/llm/`, `lib/scraper/`, `lib/analysis/`, `app/(auth)/`, `app/dashboard/`). Shared types in `lib/types/` are frozen after Day 1. |
-| **pgvector index performance** | Low | Low | Exact nearest-neighbor (no index) is fine for <1K rows. Add HNSW index later if needed — do NOT use IVFFlat at small scale (requires `lists * 10` minimum rows). |
-| **Scope creep** | High | High | If any feature isn't working by end of Day 4, cut it. The minimum viable happy path is: experiences + manual JD paste + fit score + cover letter. Scraper and bullet selection are enhancements. |
-| **LLM API latency / timeouts** | Medium | Medium | Streaming responses for long generations. 30s timeout with retry. Show progress indicators in UI. |
+| Risk                                                | Likelihood | Impact | Mitigation                                                                                                                                                                                                                                        |
+| --------------------------------------------------- | ---------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Scraper blocked by JS-rendered pages / anti-bot** | Low        | Medium | Firecrawl handles JS rendering and anti-bot (Cloudflare, DataDome) natively. Residual risk: Firecrawl may still fail on some sites (e.g., login-walled pages). Fallback: manual paste of JD text into a textarea, built on Day 1 as the baseline. |
+| **LLM output quality inconsistent**                 | Medium     | High   | Structured output mode (`response_format: { type: "json_schema" }`). Zod validation on all LLM responses. Retry with temperature adjustment on parse failure.                                                                                     |
+| **Integration merge conflicts across tracks**       | Medium     | Medium | All tracks work in isolated directories (`lib/llm/`, `lib/scraper/`, `lib/analysis/`, `app/(auth)/`, `app/dashboard/`). Shared types in `lib/types/` are frozen after Day 1.                                                                      |
+| **pgvector index performance**                      | Low        | Low    | Exact nearest-neighbor (no index) is fine for <1K rows. Add HNSW index later if needed — do NOT use IVFFlat at small scale (requires `lists * 10` minimum rows).                                                                                  |
+| **Scope creep**                                     | High       | High   | If any feature isn't working by end of Day 4, cut it. The minimum viable happy path is: experiences + manual JD paste + fit score + cover letter. Scraper and bullet selection are enhancements.                                                  |
+| **LLM API latency / timeouts**                      | Medium     | Medium | Streaming responses for long generations. 30s timeout with retry. Show progress indicators in UI.                                                                                                                                                 |
 
 ---
 
@@ -142,7 +143,7 @@ steadyhand/
 │   │   └── migrations/                 # SQL migrations
 │   ├── auth/
 │   │   ├── config.ts                   # NextAuth configuration
-│   │   └── middleware.ts               # Auth guard utilities
+│   │   └── helpers.ts                  # Auth guard utilities
 │   ├── llm/
 │   │   ├── client.ts                   # OpenAI/Anthropic wrapper with retry
 │   │   ├── embeddings.ts               # Embedding generation
