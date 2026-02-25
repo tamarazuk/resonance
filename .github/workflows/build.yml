@@ -1,0 +1,21 @@
+name: Build
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+      AUTH_SECRET: "ci-placeholder-secret-not-real"
+    steps:
+      - uses: ./.github/actions/setup
+
+      - name: Build
+        run: pnpm build
