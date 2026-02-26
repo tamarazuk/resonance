@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Button } from "@resonance/ui/components/button";
 import { Input } from "@resonance/ui/components/input";
 import { Textarea } from "@resonance/ui/components/textarea";
@@ -46,18 +47,24 @@ export default function NewApplicationPage() {
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        setUrlError(getErrorMessage(data, "Failed to create application"));
+        const errorMsg = getErrorMessage(data, "Failed to create application");
+        setUrlError(errorMsg);
+        toast.error(errorMsg);
         return;
       }
 
       if (!hasApplicationId(data)) {
         setUrlError("Failed to create application");
+        toast.error("Failed to create application");
         return;
       }
 
+      toast.success("Application created! Analyzing...");
       router.push(`/dashboard/applications/${data.id}`);
     } catch {
-      setUrlError("Network error. Please try again.");
+      const errorMsg = "Network error. Please try again.";
+      setUrlError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -77,20 +84,26 @@ export default function NewApplicationPage() {
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        setManualError(getErrorMessage(data, "Failed to create application"));
+        const errorMsg = getErrorMessage(data, "Failed to create application");
+        setManualError(errorMsg);
+        toast.error(errorMsg);
         return;
       }
 
       if (!hasApplicationId(data)) {
         setManualError("Failed to create application");
+        toast.error("Failed to create application");
         return;
       }
 
+      toast.success("Application created! Analyzing...");
       setDialogOpen(false);
       setManualJD("");
       router.push(`/dashboard/applications/${data.id}`);
     } catch {
-      setManualError("Network error. Please try again.");
+      const errorMsg = "Network error. Please try again.";
+      setManualError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
