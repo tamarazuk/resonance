@@ -41,11 +41,16 @@ export async function POST(req: Request) {
   }
 
   const { rawInput } = parsed.data;
-  const situation: string | undefined = body.situation;
-  const task: string | undefined = body.task;
-  const action: string | undefined = body.action;
-  const result: string | undefined = body.result;
-  const skills: string[] = Array.isArray(body.skills) ? body.skills : [];
+  const situation =
+    typeof body.situation === "string" ? body.situation : undefined;
+  const task = typeof body.task === "string" ? body.task : undefined;
+  const action = typeof body.action === "string" ? body.action : undefined;
+  const result = typeof body.result === "string" ? body.result : undefined;
+  const skills =
+    Array.isArray(body.skills) &&
+    body.skills.every((s: unknown) => typeof s === "string")
+      ? body.skills
+      : [];
 
   // Generate embedding if all STAR fields are provided
   const hasAllStarFields = situation && task && action && result;
@@ -58,7 +63,11 @@ export async function POST(req: Request) {
       `Result: ${result}`,
       `Skills: ${skills.join(", ")}`,
     ].join("\n");
-    embedding = await generateEmbedding(embeddingText);
+    try {
+      embedding = await generateEmbedding(embeddingText);
+    } catch {
+      embedding = undefined;
+    }
   }
 
   const [created] = await db
