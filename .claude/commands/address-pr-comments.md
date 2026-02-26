@@ -1,4 +1,4 @@
-Find the open PR for my current branch and review all unresolved review comments.
+Find the open PR for my current branch and address all unresolved review comments.
 Do not ask me for the PR number -- detect it from the branch using `gh pr view`.
 
 For each unresolved comment:

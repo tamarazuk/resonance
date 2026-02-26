@@ -1,16 +1,16 @@
 ---
-name: review-pr
+name: address-pr-comments
 description: >-
   Find the PR for the current branch, fetch all unresolved review comments,
   autonomously triage each as fix or skip, apply fixes with per-comment commits,
   and reply on GitHub with commit links or skip reasoning.
 metadata:
-  short-description: Review and address PR comments
+  short-description: Address unresolved PR review comments
 ---
 
-# Review PR Comments
+# Address PR Comments
 
-Autonomously review and address all unresolved review comments on the pull request associated with the current branch.
+Autonomously address all unresolved review comments on the pull request associated with the current branch.
 
 ## Prerequisites
 
