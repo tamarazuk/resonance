@@ -65,7 +65,7 @@ export async function POST(req: Request) {
   const skills =
     Array.isArray(body.skills) &&
     body.skills.every((s: unknown) => typeof s === "string")
-      ? body.skills
+      ? (body.skills as string[]).map((s) => s.trim()).filter((s) => s !== "")
       : [];
 
   // Generate embedding if all STAR fields are provided
@@ -81,7 +81,8 @@ export async function POST(req: Request) {
     ].join("\n");
     try {
       embedding = await generateEmbedding(embeddingText);
-    } catch {
+    } catch (error) {
+      console.error("Failed to generate embedding for new experience", error);
       embedding = undefined;
     }
   }

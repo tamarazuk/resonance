@@ -134,7 +134,11 @@ export async function PUT(req: Request, { params }: RouteParams) {
       ].join("\n");
       try {
         embedding = await generateEmbedding(embeddingText);
-      } catch {
+      } catch (error) {
+        console.error(
+          "Failed to generate embedding for experience update",
+          error,
+        );
         embedding = null;
       }
     } else {
