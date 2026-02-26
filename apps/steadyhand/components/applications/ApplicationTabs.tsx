@@ -54,7 +54,7 @@ export function ApplicationTabs({
 
       {/* Tab content */}
       {activeTab === "jd" && (
-        <div className="rounded-2xl border border-border bg-card p-8">
+        <div className="rounded-2xl border border-border bg-card p-4 md:p-8">
           {parsedJDContent}
         </div>
       )}
@@ -84,8 +84,8 @@ function SuggestedActions({ application }: { application: Application }) {
 
   return (
     <>
-      <div className="rounded-2xl border border-border bg-card p-8">
-        <h3 className="mb-6 text-base font-semibold text-foreground">
+      <div className="rounded-2xl border border-border bg-card p-4 md:p-8">
+        <h3 className="mb-4 text-base font-semibold text-foreground md:mb-6">
           Suggested Actions
         </h3>
         <ul className="space-y-4">
@@ -109,8 +109,8 @@ function SuggestedActions({ application }: { application: Application }) {
       </div>
 
       {hasGaps && (
-        <div className="rounded-2xl border border-border bg-card p-8">
-          <h3 className="mb-6 text-base font-semibold text-foreground">
+        <div className="rounded-2xl border border-border bg-card p-4 md:p-8">
+          <h3 className="mb-4 text-base font-semibold text-foreground md:mb-6">
             Skills to Develop
           </h3>
           <div className="flex flex-wrap gap-2">
