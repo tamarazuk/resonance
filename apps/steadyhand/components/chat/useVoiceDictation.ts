@@ -113,6 +113,8 @@ export function useVoiceDictation({
 
   const stopVoiceDictation = useCallback((mode: "stop" | "abort" = "stop") => {
     isDictatingRef.current = false;
+    setIsListening(false);
+    setVoiceStatusMessage(null);
 
     if (mode === "abort") {
       recognitionRef.current?.abort();
