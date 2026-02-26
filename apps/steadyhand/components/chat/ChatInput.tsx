@@ -296,6 +296,17 @@ export function ChatInput({
     }
   }
 
+  function handleVoiceKeyDown(e: React.KeyboardEvent<HTMLButtonElement>) {
+    if (
+      (e.key === "Enter" || e.key === " ") &&
+      !isVoiceSupported &&
+      !disabled
+    ) {
+      e.preventDefault();
+      handleVoiceToggle();
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center border-b border-border transition-colors focus-within:border-primary">
@@ -325,12 +336,15 @@ export function ChatInput({
         {/* Voice dictation */}
         <button
           type="button"
-          disabled={disabled || !isVoiceSupported}
+          disabled={disabled}
           onClick={handleVoiceToggle}
+          onKeyDown={handleVoiceKeyDown}
           className={`p-3 transition-colors disabled:text-muted-foreground/30 ${
-            isListening
-              ? "text-primary"
-              : "text-muted-foreground/50 hover:text-primary"
+            !isVoiceSupported
+              ? "cursor-not-allowed text-muted-foreground/30"
+              : isListening
+                ? "text-primary"
+                : "text-muted-foreground/50 hover:text-primary"
           }`}
           title={
             !isVoiceSupported
@@ -340,8 +354,14 @@ export function ChatInput({
                 : "Start voice dictation"
           }
           aria-label={
-            isListening ? "Stop voice dictation" : "Start voice dictation"
+            !isVoiceSupported
+              ? "Voice dictation is not supported in this browser"
+              : isListening
+                ? "Stop voice dictation"
+                : "Start voice dictation"
           }
+          aria-disabled={!isVoiceSupported && !disabled}
+          tabIndex={disabled ? -1 : 0}
           aria-pressed={isListening}
         >
           <MicIcon className="h-5 w-5" />
