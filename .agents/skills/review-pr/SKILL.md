@@ -24,10 +24,15 @@ Autonomously review and address all unresolved review comments on the pull reque
 Do **not** ask the user for the PR number. Detect it from the current branch:
 
 ```sh
-gh pr view --json number,url,title,headRepositoryOwner,headRepository
+gh pr view --json number,url,title,baseRefName
 ```
 
-Extract the `number`, `owner` (from `headRepositoryOwner.login`), and `repo` (from `headRepository.name`) for subsequent API calls.
+Extract the `number` for subsequent API calls. For the `owner` and `repo`, use the **current repository** (i.e., the base repo where the PR targets), not the head repository. This ensures correct behavior for fork PRs where the head repo differs from the base:
+
+```sh
+# Derive owner/repo from the current git remote
+gh repo view --json owner,name --jq '"\(.owner.login)/\(.name)"'
+```
 
 ### Step 2: Fetch all review comments
 
