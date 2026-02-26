@@ -31,7 +31,7 @@ Extract the `number`, `owner` (from `headRepositoryOwner.login`), and `repo` (fr
 
 ### Step 2: Fetch all review comments
 
-Use `gh api graphql` with pagination to fetch review threads, reviews, and conversation comments. Pass the query via stdin to avoid shell quoting issues:
+Use `gh api graphql` with pagination to fetch review threads. Pass the query via stdin to avoid shell quoting issues:
 
 ```sh
 gh api graphql -F query=@- \
