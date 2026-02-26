@@ -3,7 +3,14 @@ import { Skeleton } from "@resonance/ui/components/skeleton";
 export default function DashboardChatLoading() {
   return (
     <div className="flex h-full" aria-busy="true">
-      <span className="sr-only">Loading career coach</span>
+      <span
+        className="sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        Loading career coach
+      </span>
 
       <div className="flex w-3/5 flex-col border-r border-border bg-card">
         <div className="flex items-center justify-between border-b border-border/50 bg-card/90 px-8 py-5">
