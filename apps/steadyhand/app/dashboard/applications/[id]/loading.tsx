@@ -18,12 +18,12 @@ export default function ApplicationDetailLoading() {
           <Skeleton className="h-4 w-48 max-w-full" />
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-8">
-          <div className="flex flex-col justify-between gap-8 md:flex-row md:items-start">
-            <div className="flex items-start gap-6">
-              <Skeleton className="h-20 w-20 rounded-2xl" />
+        <div className="rounded-2xl border border-border bg-card p-4 md:p-8">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start md:gap-6">
+            <div className="flex items-start gap-4 md:gap-6">
+              <Skeleton className="size-16 rounded-2xl md:size-20" />
               <div className="space-y-3">
-                <Skeleton className="h-9 w-72 max-w-full" />
+                <Skeleton className="h-7 w-48 md:h-9 md:w-72 md:max-w-full" />
                 <div className="flex flex-wrap gap-4">
                   <Skeleton className="h-4 w-28" />
                   <Skeleton className="h-4 w-32" />

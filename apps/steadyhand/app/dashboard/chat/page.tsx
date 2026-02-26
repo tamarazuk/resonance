@@ -46,9 +46,9 @@ export default function ChatPage() {
   const filterTabs = ["All", "Leadership", "Technical", "Conflict"];
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full flex-col lg:flex-row">
       {/* Left column — Chat interface (60%) */}
-      <div className="flex w-3/5 flex-col border-r border-border bg-card">
+      <div className="flex w-full flex-col border-b border-border bg-card lg:w-3/5 lg:border-b-0 lg:border-r">
         {/* Chat header */}
         <div className="flex items-center justify-between border-b border-border/50 bg-card/90 px-8 py-5 backdrop-blur-sm">
           <div>
@@ -75,7 +75,7 @@ export default function ChatPage() {
       </div>
 
       {/* Right column — Memory Bank sidebar (40%) */}
-      <div className="flex w-2/5 flex-col bg-secondary">
+      <div className="flex w-full flex-col bg-secondary lg:w-2/5">
         {/* Sidebar header */}
         <div className="flex items-center justify-between px-8 py-6">
           <h2 className="text-base font-semibold tracking-tight text-foreground">

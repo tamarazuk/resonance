@@ -105,15 +105,15 @@ export default async function ApplicationDetailPage({
         </nav>
 
         {/* Header card */}
-        <div className="rounded-2xl border border-border bg-card p-8">
+        <div className="rounded-2xl border border-border bg-card p-4 md:p-8">
           <div className="flex flex-col justify-between gap-8 md:flex-row md:items-start">
-            <div className="flex items-start gap-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6">
               {/* Company logo placeholder */}
-              <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl border border-border bg-background">
+              <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl border border-border bg-background md:size-20">
                 <BusinessIcon className="h-10 w-10 text-muted-foreground/30" />
               </div>
               <div className="space-y-2">
-                <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
                   {title}
                 </h1>
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-light text-muted-foreground">
