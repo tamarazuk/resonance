@@ -1,11 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useSse } from "@ai-sdk/react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 interface StreamingCoverLetterProps {
   applicationId: string;
   onComplete?: (paragraphs: string[]) => void;
+}
+
+interface SseMessage {
+  type: "text" | "finish";
+  value?: string;
+  accumulated?: string;
+  paragraphs?: string[];
 }
 
 export function StreamingCoverLetter({
@@ -14,35 +20,81 @@ export function StreamingCoverLetter({
 }: StreamingCoverLetterProps) {
   const [paragraphs, setParagraphs] = useState<string[]>([]);
   const [isComplete, setIsComplete] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<string>("");
+  const abortRef = useRef<AbortController | null>(null);
 
-  const { data, isLoading } = useSse({
-    api: `/api/applications/${applicationId}/stream-cover-letter`,
-    method: "POST",
-  });
+  const startGeneration = useCallback(async () => {
+    if (isLoading) return;
 
-  useEffect(() => {
-    if (!data) return;
+    setIsLoading(true);
+    setError(null);
+    setParagraphs([]);
+    setIsComplete(false);
+    contentRef.current = "";
 
-    const message = data as {
-      type: string;
-      value?: string;
-      accumulated?: string;
-      paragraphs?: string[];
-    };
+    abortRef.current = new AbortController();
 
-    if (message.type === "text") {
-      contentRef.current =
-        (message.accumulated || contentRef.current) + (message.value || "");
-    } else if (message.type === "finish") {
-      setIsComplete(true);
-      if (message.paragraphs) {
-        setParagraphs(message.paragraphs);
-        onComplete?.(message.paragraphs);
+    try {
+      const response = await fetch(
+        `/api/applications/${applicationId}/stream-cover-letter`,
+        {
+          method: "POST",
+          signal: abortRef.current.signal,
+        },
+      );
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to generate cover letter");
       }
+
+      if (!response.body) {
+        throw new Error("No response body");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data: SseMessage = JSON.parse(line.slice(6));
+
+              if (data.type === "text") {
+                contentRef.current = data.accumulated || contentRef.current;
+              } else if (data.type === "finish") {
+                setIsComplete(true);
+                if (data.paragraphs) {
+                  setParagraphs(data.paragraphs);
+                  onComplete?.(data.paragraphs);
+                }
+              }
+            } catch {
+              // Ignore parse errors for incomplete messages
+            }
+          }
+        }
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name !== "AbortError") {
+        setError(err.message);
+      }
+    } finally {
+      setIsLoading(false);
+      abortRef.current = null;
     }
-  }, [data, onComplete]);
+  }, [applicationId, isLoading, onComplete]);
 
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
@@ -62,16 +114,32 @@ export function StreamingCoverLetter({
 
   if (error) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-        {error}
+      <div className="space-y-4">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+          {error}
+        </div>
+        <button
+          onClick={startGeneration}
+          className="rounded-full border border-primary bg-primary px-6 py-2 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/90"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
 
   if (!isLoading && paragraphs.length === 0 && !isComplete) {
     return (
-      <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
-        Click "Generate Draft" to create your cover letter.
+      <div className="space-y-4">
+        <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
+          Generate a cover letter tailored to this position.
+        </div>
+        <button
+          onClick={startGeneration}
+          className="rounded-full border border-primary bg-primary px-6 py-2 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/90"
+        >
+          Generate Cover Letter
+        </button>
       </div>
     );
   }
@@ -116,6 +184,15 @@ export function StreamingCoverLetter({
           <span className="inline-block h-4 w-2 animate-pulse bg-primary/50" />
         )}
       </div>
+
+      {isComplete && (
+        <button
+          onClick={startGeneration}
+          className="rounded-full border border-border px-4 py-2 text-xs font-medium text-muted-foreground transition-all hover:border-primary/50 hover:text-primary"
+        >
+          Regenerate
+        </button>
+      )}
     </div>
   );
 }
