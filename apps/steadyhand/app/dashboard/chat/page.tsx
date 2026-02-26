@@ -41,6 +41,7 @@ export default function ChatPage() {
   const [deletingExperience, setDeletingExperience] =
     useState<Experience | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const fetchExperiences = useCallback(async () => {
     try {
@@ -63,6 +64,7 @@ export default function ChatPage() {
   async function handleDelete() {
     if (!deletingExperience) return;
     setDeleteLoading(true);
+    setDeleteError(null);
     try {
       const res = await fetch(`/api/experiences/${deletingExperience.id}`, {
         method: "DELETE",
@@ -70,9 +72,11 @@ export default function ChatPage() {
       if (res.ok) {
         setDeletingExperience(null);
         fetchExperiences();
+      } else {
+        setDeleteError("Failed to delete experience. Please try again.");
       }
     } catch {
-      // Silently fail — user can retry
+      setDeleteError("Network error — please try again.");
     } finally {
       setDeleteLoading(false);
     }
@@ -211,7 +215,10 @@ export default function ChatPage() {
       <AlertDialog
         open={!!deletingExperience}
         onOpenChange={(open) => {
-          if (!open) setDeletingExperience(null);
+          if (!open) {
+            setDeletingExperience(null);
+            setDeleteError(null);
+          }
         }}
       >
         <AlertDialogContent>
@@ -222,6 +229,9 @@ export default function ChatPage() {
               Bank. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {deleteError && (
+            <p className="text-sm text-destructive">{deleteError}</p>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteLoading}>
               Cancel
