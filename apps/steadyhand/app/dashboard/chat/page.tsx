@@ -7,7 +7,6 @@ import { ExperienceCard } from "@/components/memory/ExperienceCard";
 import { ExperienceForm } from "@/components/memory/ExperienceForm";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -15,6 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@resonance/ui/components/alert-dialog";
+import { Button } from "@resonance/ui/components/button";
 import {
   EmptyState,
   EmptyStateIcon,
@@ -236,9 +236,14 @@ export default function ChatPage() {
             <AlertDialogCancel disabled={deleteLoading}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleteLoading}>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteLoading}
+            >
               {deleteLoading ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
