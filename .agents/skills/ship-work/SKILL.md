@@ -65,7 +65,7 @@ EOF
 - Title should follow conventional commit style.
 - If the branch name contains an issue number, include `Closes #N` in the body. This is how the linked project board item gets moved to Done — **never** manually set the project status to Done.
 
-If a **draft PR already exists**, update the title and body to reflect the final state of the work, but **keep it in draft** — the user will mark it ready for review:
+If a **draft PR already exists**, update the title and body to reflect the latest state of the work:
 
 ```sh
 gh pr edit --title "type(scope): final summary" --body "$(cat <<'EOF'
@@ -77,4 +77,44 @@ EOF
 )"
 ```
 
-If a **non-draft PR already exists**, just confirm the push succeeded and print the PR URL.
+If a **non-draft PR already exists**, update title/body if needed and confirm the push succeeded.
+
+### Step 5: Sync the linked issue body with the PR number
+
+After creating or updating the PR, update the linked issue description so the first line is exactly:
+
+```md
+# PR: #<number>
+```
+
+Requirements:
+
+- Keep the rest of the issue body intact.
+- If the first line already starts with `# PR: #`, replace it with the current PR number.
+- Apply this for both newly created PRs and already-existing PRs.
+
+Use the shared script:
+
+```sh
+python .agents/scripts/sync_issue_pr_header.py --issue-number <ISSUE_NUMBER>
+```
+
+Notes:
+
+- The script auto-detects the current branch PR number by default.
+- You can override PR or repo explicitly when needed:
+  ```sh
+  python .agents/scripts/sync_issue_pr_header.py --issue-number <ISSUE_NUMBER> --pr-number <PR_NUMBER> --repo <OWNER/REPO>
+  ```
+
+### Step 6: Mark ready for review when work is complete
+
+When implementation is complete, move the PR out of draft and return the URL:
+
+```sh
+gh pr ready
+gh pr view --json url --jq '.url'
+```
+
+- Keep the PR in draft while work is still in progress.
+- If the user explicitly asks to keep it in draft, do not run `gh pr ready`.
