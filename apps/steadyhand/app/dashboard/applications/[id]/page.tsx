@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { cache } from "react";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -18,24 +17,22 @@ import {
 } from "@resonance/ui/components/empty-state";
 import { Button } from "@resonance/ui/components/button";
 
-const getApplication = cache(
-  async (id: string): Promise<Application | null> => {
-    try {
-      const cookieStore = await cookies();
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/applications/${id}`,
-        {
-          headers: { cookie: cookieStore.toString() },
-          cache: "no-store",
-        },
-      );
-      if (!res.ok) return null;
-      return res.json();
-    } catch {
-      return null;
-    }
-  },
-);
+async function getApplication(id: string): Promise<Application | null> {
+  try {
+    const cookieStore = await cookies();
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/applications/${id}`,
+      {
+        headers: { cookie: cookieStore.toString() },
+        cache: "no-store",
+      },
+    );
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
 
 const statusLabels: Record<ApplicationStatus, string> = {
   draft: "Draft",
