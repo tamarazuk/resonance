@@ -1,7 +1,9 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
+import LinkedIn from "next-auth/providers/linkedin";
 import { compare } from "bcryptjs";
-import { db } from "@resonance/db";
+import { db, users } from "@resonance/db";
 import { loginSchema } from "@resonance/types";
 
 declare module "next-auth" {
@@ -9,6 +11,11 @@ declare module "next-auth" {
     id: string;
     email: string;
     fullName: string | null;
+  }
+
+  interface Account {
+    provider: string;
+    providerAccountId: string;
   }
 }
 
@@ -18,6 +25,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: "/login",
   },
   providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    }),
+    LinkedIn({
+      clientId: process.env.LINKEDIN_CLIENT_ID,
+      clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+    }),
     Credentials({
       credentials: {
         email: {},
@@ -35,6 +50,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           });
 
           if (!user) return null;
+          if (!user.passwordHash) return null;
 
           const passwordMatch = await compare(password, user.passwordHash);
           if (!passwordMatch) return null;
@@ -52,9 +68,32 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async signIn({ user, account }) {
+      if (!account || account.provider === "credentials") {
+        return true;
+      }
+
+      const existingUser = await db.query.users.findFirst({
+        where: (users, { eq }) => eq(users.email, user.email!),
+      });
+
+      if (existingUser) {
+        return true;
+      }
+
+      await db.insert(users).values({
+        email: user.email!,
+        fullName: user.name,
+      });
+
+      return true;
+    },
+    jwt({ token, user, account }) {
       if (user) {
         token.userId = user.id as string;
+      }
+      if (account) {
+        token.provider = account.provider;
       }
       return token;
     },
