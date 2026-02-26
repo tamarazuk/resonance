@@ -5,6 +5,7 @@ import {
   timestamp,
   jsonb,
   pgEnum,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { vector } from "drizzle-orm/pg-core/columns/vector_extension/vector";
 import { relations } from "drizzle-orm";
@@ -31,13 +32,15 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash"),
   fullName: text("full_name"),
   headline: text("headline"),
+  consentAnalytics: boolean("consent_analytics").notNull().default(true),
+  consentAiTraining: boolean("consent_ai_training").notNull().default(false),
+  consentMarketing: boolean("consent_marketing").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date()),
 });
-
 // ==================== Accounts Table ====================
 
 export const accounts = pgTable("accounts", {
@@ -171,6 +174,5 @@ export type NewAccount = typeof accounts.$inferInsert;
 
 export type Experience = typeof experiences.$inferSelect;
 export type NewExperience = typeof experiences.$inferInsert;
-
 export type Application = typeof applications.$inferSelect;
 export type NewApplication = typeof applications.$inferInsert;

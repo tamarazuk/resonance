@@ -1,0 +1,66 @@
+import { NextResponse } from "next/server";
+import { db, users, eq } from "@resonance/db";
+import type { UserPreferences } from "@resonance/types";
+import { auth } from "@/lib/auth";
+import { updatePreferencesSchema } from "@resonance/types";
+
+function toPreferences(row: typeof users.$inferSelect): UserPreferences {
+  return {
+    consentAnalytics: row.consentAnalytics,
+    consentAiTraining: row.consentAiTraining,
+    consentMarketing: row.consentMarketing,
+  };
+}
+
+export async function GET() {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const [row] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, session.user.id))
+    .limit(1);
+
+  if (!row) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(toPreferences(row));
+}
+
+export async function PUT(request: Request) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const parsed = updatePreferencesSchema.safeParse(body);
+
+  if (!parsed.success) {
+    const firstError = parsed.error.issues[0];
+    return NextResponse.json(
+      { error: firstError?.message || "Invalid input" },
+      { status: 400 },
+    );
+  }
+
+  const updates = parsed.data;
+
+  const [row] = await db
+    .update(users)
+    .set(updates)
+    .where(eq(users.id, session.user.id))
+    .returning();
+
+  if (!row) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(toPreferences(row));
+}

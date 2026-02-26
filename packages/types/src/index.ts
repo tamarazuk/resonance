@@ -8,8 +8,17 @@ export interface User {
   passwordHash: string;
   fullName: string | null;
   headline: string | null;
+  consentAnalytics: boolean;
+  consentAiTraining: boolean;
+  consentMarketing: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface UserPreferences {
+  consentAnalytics: boolean;
+  consentAiTraining: boolean;
+  consentMarketing: boolean;
 }
 
 export interface SessionUser {
@@ -117,6 +126,12 @@ export const signupSchema = z.object({
     .regex(/[a-z]/, "Password must contain at least one lowercase letter")
     .regex(/[0-9]/, "Password must contain at least one number"),
   fullName: z.string().min(2, "Name must be at least 2 characters").optional(),
+});
+
+export const updatePreferencesSchema = z.object({
+  consentAnalytics: z.boolean().optional(),
+  consentAiTraining: z.boolean().optional(),
+  consentMarketing: z.boolean().optional(),
 });
 
 export const loginSchema = z.object({
