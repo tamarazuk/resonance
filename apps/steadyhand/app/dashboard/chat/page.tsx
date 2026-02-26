@@ -200,7 +200,7 @@ export default function ChatPage() {
       {editingExperience && (
         <ExperienceForm
           experience={editingExperience}
-          open={!!editingExperience}
+          open={true}
           onOpenChange={(open) => {
             if (!open) setEditingExperience(null);
           }}
