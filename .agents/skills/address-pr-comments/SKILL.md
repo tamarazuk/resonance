@@ -19,81 +19,41 @@ Autonomously address all unresolved review comments on the pull request associat
 
 ## Workflow
 
-### Step 1: Detect the PR
+### Step 1: Fetch PR comments
 
-Do **not** ask the user for the PR number. Detect it from the current branch:
+Run the bundled script to fetch all comments, reviews, and review threads for the current branch's PR. The script handles auth validation, pagination, and fork PR detection automatically:
 
 ```sh
-gh pr view --json number,url,title,baseRefName
+python .agents/skills/address-pr-comments/scripts/fetch_comments.py --unresolved-only
 ```
 
-Extract the `number` for subsequent API calls. For the `owner` and `repo`, use the **current repository** (i.e., the base repo where the PR targets), not the head repository. This ensures correct behavior for fork PRs where the head repo differs from the base:
+This outputs JSON with the structure:
 
-```sh
-# Derive owner/repo from the current git remote
-gh repo view --json owner,name --jq '"\(.owner.login)/\(.name)"'
-```
-
-### Step 2: Fetch all review comments
-
-Use `gh api graphql` with pagination to fetch review threads. Pass the query via stdin to avoid shell quoting issues:
-
-```sh
-gh api graphql -F query=@- \
-  -F owner="OWNER" \
-  -F repo="REPO" \
-  -F number=NUMBER <<'GRAPHQL'
-query($owner: String!, $repo: String!, $number: Int!, $threadsCursor: String) {
-  repository(owner: $owner, name: $repo) {
-    pullRequest(number: $number) {
-      number
-      url
-      title
-      author { login }
-      reviewThreads(first: 100, after: $threadsCursor) {
-        pageInfo { hasNextPage endCursor }
-        nodes {
-          id
-          isResolved
-          isOutdated
-          path
-          line
-          startLine
-          comments(first: 100) {
-            nodes {
-              id
-              databaseId
-              body
-              createdAt
-              author { login }
-            }
-          }
-        }
-      }
-    }
-  }
+```json
+{
+  "pull_request": { "number": 34, "url": "...", "title": "...", "state": "OPEN", "author": "...", "owner": "...", "repo": "..." },
+  "conversation_comments": [ ... ],
+  "reviews": [ ... ],
+  "review_threads": [ ... ]
 }
-GRAPHQL
 ```
 
-If `pageInfo.hasNextPage` is true, paginate by passing the `endCursor` as `threadsCursor`.
+With `--unresolved-only`, review threads are pre-filtered to unresolved and non-outdated. Omit the flag to get everything.
 
-You can also fetch top-level conversation comments separately:
+Extract `owner` and `repo` from the `pull_request` object for subsequent API calls.
 
-```sh
-gh api repos/OWNER/REPO/issues/NUMBER/comments
-```
+### Step 2: Filter to actionable comments
 
-### Step 3: Filter to actionable comments
+Only process review thread comments that meet **all** of these criteria:
 
-Only process comments that meet **all** of these criteria:
-
-- Thread is **not resolved** (`isResolved: false`)
-- Thread is **not outdated** (`isOutdated: false`)
 - Comment author is **not** the PR author (skip self-comments)
 - Comment author is **not** a bot (skip authors ending in `[bot]`)
 
-### Step 4: Triage each comment
+If you did not use `--unresolved-only`, also filter out threads where `isResolved: true` or `isOutdated: true`.
+
+Also check `conversation_comments` and `reviews` for any actionable feedback not captured in review threads.
+
+### Step 3: Triage each comment
 
 For each actionable comment, read the comment body and the referenced file/line. Decide one of:
 
@@ -105,7 +65,7 @@ When triaging, consider:
 - If the reviewer flags something as a serious problem but it is actually an intentional design decision, that is a valid reason to skip. Explain the design rationale clearly in your reply.
 - If you are uncertain whether something is intentional, err on the side of fixing it.
 
-### Step 5: Address each comment
+### Step 4: Address each comment
 
 #### For fixes
 
@@ -136,7 +96,7 @@ gh api repos/OWNER/REPO/pulls/NUMBER/comments \
 
 Be respectful and specific. Reference the design decision, existing pattern, or trade-off that justifies the choice.
 
-### Step 6: Summary
+### Step 5: Summary
 
 After all comments are addressed, present a summary to the user:
 
