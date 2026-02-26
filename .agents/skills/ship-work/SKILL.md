@@ -1,15 +1,16 @@
 ---
 name: ship-work
 description: >-
-  Commit staged work using conventional commits, push to remote, and open
-  a PR if one doesn't already exist for the current branch.
+  Stage relevant changes if needed, commit using conventional commits, push
+  to remote, and open a PR if one doesn't already exist for the current branch.
 metadata:
   short-description: Commit, push, and open PR
 ---
 
 # Ship Work
 
-Commit the agent's current work, push to remote, and ensure a PR exists.
+Stage relevant changes for the current task if needed, commit, push to remote,
+and ensure a PR exists.
 
 ## Workflow
 
