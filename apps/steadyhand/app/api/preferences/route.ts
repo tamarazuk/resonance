@@ -49,9 +49,11 @@ export async function PUT(request: Request) {
   const parsed = updatePreferencesSchema.safeParse(body);
 
   if (!parsed.success) {
-    const firstError = parsed.error.issues[0];
     return NextResponse.json(
-      { error: firstError?.message || "Invalid input" },
+      {
+        error: "Validation failed",
+        details: parsed.error.flatten().fieldErrors,
+      },
       { status: 400 },
     );
   }

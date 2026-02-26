@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { UserPreferences } from "@resonance/types";
 import {
   Card,
   CardContent,
@@ -9,12 +10,9 @@ import {
   CardTitle,
 } from "@resonance/ui/components/card";
 import { Skeleton } from "@resonance/ui/components/skeleton";
+import { Button } from "@resonance/ui/components/button";
 
-interface Preferences {
-  consentAnalytics: boolean;
-  consentAiTraining: boolean;
-  consentMarketing: boolean;
-}
+type Preferences = UserPreferences;
 
 interface SettingsClientProps {
   initialPreferences: Preferences | null;
@@ -25,6 +23,20 @@ export function SettingsClient({ initialPreferences }: SettingsClientProps) {
     initialPreferences,
   );
   const [saving, setSaving] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-10">
+          <p className="mb-4 text-sm text-destructive">{error}</p>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!preferences) {
     return (
@@ -38,11 +50,11 @@ export function SettingsClient({ initialPreferences }: SettingsClientProps) {
 
   async function handleToggle(key: keyof Preferences) {
     if (!preferences) return;
-    const newValue = !preferences[key];
+    const currentValue = preferences[key];
+    const newValue = !currentValue;
     setSaving(key);
 
-    const previousPreferences = preferences;
-    setPreferences({ ...preferences, [key]: newValue });
+    setPreferences((prev) => (prev ? { ...prev, [key]: newValue } : null));
 
     try {
       const res = await fetch("/api/preferences", {
@@ -52,10 +64,17 @@ export function SettingsClient({ initialPreferences }: SettingsClientProps) {
       });
 
       if (!res.ok) {
-        setPreferences(previousPreferences);
+        const data = await res.json();
+        setPreferences((prev) =>
+          prev ? { ...prev, [key]: currentValue } : null,
+        );
+        setError(data.error || "Failed to save preference");
       }
     } catch {
-      setPreferences(previousPreferences);
+      setPreferences((prev) =>
+        prev ? { ...prev, [key]: currentValue } : null,
+      );
+      setError("Failed to save preference");
     } finally {
       setSaving(null);
     }
@@ -119,13 +138,15 @@ function ToggleItem({
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
       <button
+        type="button"
         onClick={onChange}
         disabled={loading}
+        aria-label={`${title} toggle`}
+        aria-checked={checked}
         className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 ${
           checked ? "bg-primary" : "bg-input"
         }`}
         role="switch"
-        aria-checked={checked}
       >
         <span
           className={`pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform ${
