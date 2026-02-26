@@ -117,7 +117,8 @@ export async function PUT(req: Request, { params }: RouteParams) {
 
   const skillsChanged =
     skills !== undefined &&
-    JSON.stringify(skills) !== JSON.stringify(existing.skills);
+    JSON.stringify([...skills].sort()) !==
+      JSON.stringify([...existing.skills].sort());
 
   const contentChanged = starFieldsChanged || skillsChanged;
 
