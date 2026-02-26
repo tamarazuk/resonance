@@ -1,0 +1,15 @@
+{
+  "preservePatterns": [
+    ".env",
+    ".env.keys",
+    ".env.local",
+    ".env.*.local",
+    ".envrc",
+    "docker-compose.override.yml"
+  ],
+  "scripts": {
+    "setup": "mise run worktree:init",
+    "run": "mise run dev",
+    "teardown": "mise run worktree:clean"
+  }
+}
