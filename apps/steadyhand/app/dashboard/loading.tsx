@@ -5,6 +5,9 @@ export default function DashboardLoading() {
     <div
       className="mx-auto w-full max-w-6xl px-6 py-10 lg:px-10"
       aria-busy="true"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
     >
       <span className="sr-only">Loading dashboard</span>
 
