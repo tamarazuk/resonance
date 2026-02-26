@@ -62,7 +62,7 @@ export function ChatInput({
     disabled,
     inputValue: input,
     onInputChange: setInput,
-    onAfterInputChange: resizeCurrentTextarea,
+    onAfterInputChange: scheduleResizeCurrentTextarea,
   });
 
   const handleSend = useCallback(() => {
