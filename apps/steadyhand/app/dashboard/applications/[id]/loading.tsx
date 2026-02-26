@@ -2,7 +2,7 @@ import { Skeleton } from "@resonance/ui/components/skeleton";
 
 export default function ApplicationDetailLoading() {
   return (
-    <main
+    <div
       className="flex flex-1 justify-center px-4 py-10 sm:px-6 lg:px-8"
       aria-busy="true"
     >
@@ -82,6 +82,6 @@ export default function ApplicationDetailLoading() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
