@@ -42,12 +42,12 @@ The scope should match the area of the codebase (e.g. `steadyhand`, `docs`, `dep
 git push -u origin HEAD
 ```
 
-### Step 4: Open a PR if needed
+### Step 4: Open or finalize a PR
 
 Check if a PR already exists:
 
 ```sh
-gh pr view --json number,url 2>/dev/null
+gh pr view --json number,url,isDraft 2>/dev/null
 ```
 
 If **no PR exists**, create one:
@@ -65,4 +65,17 @@ EOF
 - Title should follow conventional commit style.
 - If the branch name contains an issue number, include `Closes #N` in the body. This is how the linked project board item gets moved to Done — **never** manually set the project status to Done.
 
-If a **PR already exists**, just confirm the push succeeded and print the PR URL.
+If a **draft PR already exists**, mark it ready for review and update the title/body to reflect the final state of the work:
+
+```sh
+gh pr ready
+gh pr edit --title "type(scope): final summary" --body "$(cat <<'EOF'
+## Summary
+- Final description of changes
+
+Closes #ISSUE_NUMBER
+EOF
+)"
+```
+
+If a **non-draft PR already exists**, just confirm the push succeeded and print the PR URL.

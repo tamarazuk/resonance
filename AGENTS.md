@@ -67,10 +67,28 @@ We track all work on the **Resonance Roadmap** GitHub Project (project #2, owner
    ```
 5. **Work in a feature branch** (not main). Branch naming: `feat/<short-description>`, `fix/<short-description>`.
 
+### During Work
+
+1. **Open a draft PR after your first commit.** Push the branch and create a draft PR immediately so there is always a visible link between the issue, branch, and worktree — even if the agent session is interrupted or the workspace is deleted:
+
+   ```sh
+   git push -u origin HEAD
+   gh pr create --draft --title "type(scope): summary (#N)" --body "$(cat <<'EOF'
+   ## Summary
+   - Work in progress
+
+   Closes #ISSUE_NUMBER
+   EOF
+   )"
+   ```
+
+2. **Push after each logical commit.** Never leave work only in a local worktree. If the session ends unexpectedly, unpushed commits are at risk of being lost.
+
 ### After Completing Work
 
 1. **Do NOT manually set Status to Done.** Instead, include `Closes #<issue-number>` in the PR body. GitHub automation will move the item to Done when the PR merges.
-2. If work is incomplete or blocked, leave it as "In Progress" and note the blocker in your summary to the user.
+2. If a draft PR already exists, mark it ready for review with `gh pr ready` and update the title/body as needed.
+3. If work is incomplete or blocked, leave it as "In Progress" and note the blocker in your summary to the user.
 
 ### Avoiding Conflicts Between Agents
 
