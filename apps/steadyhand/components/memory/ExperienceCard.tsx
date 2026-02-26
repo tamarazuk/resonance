@@ -42,13 +42,17 @@ export function ExperienceCard({
         </div>
         <div className="flex items-center gap-1">
           <button
-            className="text-muted-foreground/30 opacity-0 transition-all hover:text-primary group-hover:opacity-100"
+            type="button"
+            aria-label="Edit experience"
+            className="text-muted-foreground/30 opacity-0 transition-all hover:text-primary group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
             onClick={() => onEdit?.(experience)}
           >
             <EditIcon className="h-4.5 w-4.5" />
           </button>
           <button
-            className="text-muted-foreground/30 opacity-0 transition-all hover:text-destructive group-hover:opacity-100"
+            type="button"
+            aria-label="Delete experience"
+            className="text-muted-foreground/30 opacity-0 transition-all hover:text-destructive group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
             onClick={() => onDelete?.(experience)}
           >
             <TrashIcon className="h-4.5 w-4.5" />
