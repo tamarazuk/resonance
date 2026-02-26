@@ -74,13 +74,14 @@ export async function POST(req: Request) {
     }
 
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-    const buffer = Buffer.from(await file.arrayBuffer());
-    if (buffer.length > MAX_FILE_SIZE) {
+    if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: "File too large. Maximum size is 10MB." },
         { status: 400 },
       );
     }
+
+    const buffer = Buffer.from(await file.arrayBuffer());
     let resumeText: string;
 
     if (file.type === "application/pdf") {
@@ -107,6 +108,7 @@ export async function POST(req: Request) {
       prompt: userPrompt,
       temperature: 0.3,
     });
+
     if (!content) {
       return NextResponse.json(
         { error: "Failed to parse resume" },
