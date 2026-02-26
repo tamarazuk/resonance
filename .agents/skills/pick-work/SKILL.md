@@ -56,11 +56,11 @@ For each recommendation, explain:
 
 ### Step 5: Wait for confirmation
 
-**Do not change any statuses.** Present the recommendations and ask the user which item(s) they want to pick up. Only after explicit confirmation should you claim items by setting their status to "Planning".
+**Do not change any statuses yet.** Present the recommendations and ask the user which item(s) they want to pick up.
 
 ## Claiming an item
 
-After the user confirms, claim the item by setting its status to Planning:
+Once the user confirms, **immediately** claim the item by setting its status to Planning (per the AGENTS.md protocol, claim before any exploration or coding):
 
 ```sh
 gh project item-edit --project-id "PVT_kwHOADQ5Ws4BQKPh" \
