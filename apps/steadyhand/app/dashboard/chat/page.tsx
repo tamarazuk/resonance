@@ -5,6 +5,7 @@ import type { Experience } from "@resonance/types";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { ExperienceCard } from "@/components/memory/ExperienceCard";
 import { ExperienceForm } from "@/components/memory/ExperienceForm";
+import { ResumeUpload } from "@/components/memory/ResumeUpload";
 import {
   EmptyState,
   EmptyStateIcon,
@@ -46,9 +47,9 @@ export default function ChatPage() {
   const filterTabs = ["All", "Leadership", "Technical", "Conflict"];
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full flex-col lg:flex-row">
       {/* Left column — Chat interface (60%) */}
-      <div className="flex w-3/5 flex-col border-r border-border bg-card">
+      <div className="flex w-full flex-col border-b border-border bg-card lg:w-3/5 lg:border-b-0 lg:border-r">
         {/* Chat header */}
         <div className="flex items-center justify-between border-b border-border/50 bg-card/90 px-8 py-5 backdrop-blur-sm">
           <div>
@@ -75,21 +76,24 @@ export default function ChatPage() {
       </div>
 
       {/* Right column — Memory Bank sidebar (40%) */}
-      <div className="flex w-2/5 flex-col bg-secondary">
+      <div className="flex w-full flex-col bg-secondary lg:w-2/5">
         {/* Sidebar header */}
         <div className="flex items-center justify-between px-8 py-6">
           <h2 className="text-base font-semibold tracking-tight text-foreground">
             Memory Bank
           </h2>
-          <ExperienceForm
-            onSaved={fetchExperiences}
-            trigger={
-              <button className="flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80">
-                <PlusIcon className="h-4.5 w-4.5" />
-                New Entry
-              </button>
-            }
-          />
+          <div className="flex items-center gap-3">
+            <ResumeUpload onUploaded={fetchExperiences} />
+            <ExperienceForm
+              onSaved={fetchExperiences}
+              trigger={
+                <button className="flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80">
+                  <PlusIcon className="h-4.5 w-4.5" />
+                  New Entry
+                </button>
+              }
+            />
+          </div>
         </div>
 
         {/* Filter tabs */}

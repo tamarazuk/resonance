@@ -19,9 +19,12 @@
     "@resonance/ui": "workspace:*",
     "ai": "^6.0.99",
     "bcryptjs": "^3.0.3",
+    "lucide-react": "^0.575.0",
+    "mammoth": "^1.11.0",
     "next": "16.1.6",
     "next-auth": "5.0.0-beta.30",
     "openai": "^6.25.0",
+    "pdf-parse": "^2.4.5",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "zod": "^4.3.6"
