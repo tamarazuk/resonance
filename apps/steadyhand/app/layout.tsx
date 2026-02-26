@@ -16,7 +16,10 @@ const playfairDisplay = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Steadyhand",
+  title: {
+    default: "Steadyhand",
+    template: "%s — Steadyhand",
+  },
   description: "AI-powered career toolkit",
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],

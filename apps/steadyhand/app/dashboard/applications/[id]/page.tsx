@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -44,6 +45,30 @@ const statusLabels: Record<ApplicationStatus, string> = {
   rejected: "Rejected",
   withdrawn: "Withdrawn",
 };
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const application = await getApplication(id);
+
+  if (!application) {
+    return { title: "Application Detail" };
+  }
+
+  const role = application.parsedJD?.title;
+  const company = application.parsedJD?.company;
+
+  if (!role) {
+    return { title: "Application Detail" };
+  }
+
+  return {
+    title: company ? `${role} at ${company}` : role,
+  };
+}
 
 export default async function ApplicationDetailPage({
   params,
