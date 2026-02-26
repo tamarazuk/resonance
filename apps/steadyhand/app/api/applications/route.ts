@@ -6,8 +6,7 @@ import { scrapeJobPosting } from "@/lib/scraper";
 import { parseJobDescription } from "@/lib/llm/prompts/jd-parser";
 import { generateEmbedding } from "@/lib/llm/embeddings";
 
-const MANUAL_ENTRY_URL =
-  "https://manual-input.steadyhand.local/job-description";
+const MANUAL_ENTRY_LABEL = "Manual Entry";
 
 /** GET /api/applications — list all applications for the authenticated user. */
 export async function GET() {
@@ -69,15 +68,10 @@ export async function POST(req: Request) {
     jdSourceText = scrapeResult.markdown;
     persistedExternalUrl = externalUrl;
     rawHtml = scrapeResult.rawHtml ?? null;
-  } else if (manualJD) {
-    // 1b. Manual fallback path (no scraping)
-    jdSourceText = manualJD;
-    persistedExternalUrl = MANUAL_ENTRY_URL;
   } else {
-    return NextResponse.json(
-      { error: "Invalid application payload" },
-      { status: 400 },
-    );
+    // Zod validation ensures one of {externalUrl, manualJD} is present.
+    jdSourceText = manualJD as string;
+    persistedExternalUrl = MANUAL_ENTRY_LABEL;
   }
 
   // 2. Parse the JD via LLM

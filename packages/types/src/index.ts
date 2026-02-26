@@ -151,6 +151,7 @@ export const createApplicationSchema = z
     externalUrl: z.string().url("Must be a valid URL").optional(),
     manualJD: z
       .string()
+      .trim()
       .min(50, "Job description must be at least 50 characters")
       .optional(),
   })

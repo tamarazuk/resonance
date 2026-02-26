@@ -28,12 +28,13 @@ export default function NewApplicationPage() {
   const [url, setUrl] = useState("");
   const [manualJD, setManualJD] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [urlError, setUrlError] = useState<string | null>(null);
+  const [manualError, setManualError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   async function handleUrlSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    setUrlError(null);
     setLoading(true);
 
     const res = await fetch("/api/applications", {
@@ -46,7 +47,7 @@ export default function NewApplicationPage() {
 
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error ?? "Failed to create application");
+      setUrlError(getErrorMessage(data, "Failed to create application"));
       return;
     }
 
@@ -56,7 +57,7 @@ export default function NewApplicationPage() {
 
   async function handleManualSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    setManualError(null);
     setLoading(true);
 
     const res = await fetch("/api/applications", {
@@ -69,7 +70,7 @@ export default function NewApplicationPage() {
 
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error ?? "Failed to create application");
+      setManualError(getErrorMessage(data, "Failed to create application"));
       return;
     }
 
@@ -119,7 +120,9 @@ export default function NewApplicationPage() {
           {/* Form */}
           <div className="p-8 md:p-10">
             <form onSubmit={handleUrlSubmit} className="flex flex-col gap-8">
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              {urlError && (
+                <p className="text-sm text-destructive">{urlError}</p>
+              )}
 
               {/* URL section */}
               <div>
@@ -163,7 +166,13 @@ export default function NewApplicationPage() {
                   )}
                 </Button>
 
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <Dialog
+                  open={dialogOpen}
+                  onOpenChange={(open) => {
+                    setDialogOpen(open);
+                    setManualError(null);
+                  }}
+                >
                   <DialogTrigger
                     render={
                       <button
@@ -183,9 +192,9 @@ export default function NewApplicationPage() {
                         </DialogDescription>
                       </DialogHeader>
                       <div className="py-4">
-                        {error && (
+                        {manualError && (
                           <p className="mb-3 text-sm text-destructive">
-                            {error}
+                            {manualError}
                           </p>
                         )}
                         <Textarea
@@ -194,6 +203,7 @@ export default function NewApplicationPage() {
                           onChange={(e) => setManualJD(e.target.value)}
                           rows={12}
                           required
+                          minLength={50}
                           className="font-light"
                         />
                       </div>
@@ -220,6 +230,32 @@ export default function NewApplicationPage() {
       </div>
     </div>
   );
+}
+
+function getErrorMessage(data: unknown, fallback: string): string {
+  if (!data || typeof data !== "object") {
+    return fallback;
+  }
+
+  const payload = data as { error?: unknown; details?: unknown };
+
+  if (
+    typeof payload.error === "string" &&
+    payload.details &&
+    typeof payload.details === "object"
+  ) {
+    const detailMessages = Object.values(
+      payload.details as Record<string, unknown>,
+    )
+      .flatMap((value) => (Array.isArray(value) ? value : []))
+      .filter((value): value is string => typeof value === "string");
+
+    if (detailMessages.length > 0) {
+      return `${payload.error}: ${detailMessages.join(", ")}`;
+    }
+  }
+
+  return typeof payload.error === "string" ? payload.error : fallback;
 }
 
 // ─── Icons ──────────────────────────────────────────────────────────────────────
