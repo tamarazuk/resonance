@@ -154,10 +154,12 @@ export async function PUT(req: Request, { params }: RouteParams) {
     .update(experiences)
     .set({
       ...(rawInput !== undefined && { rawInput }),
-      situation,
-      task,
-      action,
-      result,
+      ...(starStructure !== undefined && {
+        situation,
+        task,
+        action,
+        result,
+      }),
       ...(skills !== undefined && { skills }),
       embedding,
     })
