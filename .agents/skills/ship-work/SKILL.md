@@ -62,6 +62,6 @@ EOF
 ```
 
 - Title should follow conventional commit style.
-- If the branch name contains an issue number, include `Closes #N` in the body.
+- If the branch name contains an issue number, include `Closes #N` in the body. This is how the linked project board item gets moved to Done — **never** manually set the project status to Done.
 
 If a **PR already exists**, just confirm the push succeeded and print the PR URL.

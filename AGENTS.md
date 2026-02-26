@@ -69,13 +69,7 @@ We track all work on the **Resonance Roadmap** GitHub Project (project #2, owner
 
 ### After Completing Work
 
-1. **Set Status to Done:**
-   ```sh
-   gh project item-edit --project-id "PVT_kwHOADQ5Ws4BQKPh" \
-     --id "<ITEM_ID>" \
-     --field-id "PVTSSF_lAHOADQ5Ws4BQKPhzg-XDYc" \
-     --single-select-option-id "98236657"
-   ```
+1. **Do NOT manually set Status to Done.** Instead, include `Closes #<issue-number>` in the PR body. GitHub automation will move the item to Done when the PR merges.
 2. If work is incomplete or blocked, leave it as "In Progress" and note the blocker in your summary to the user.
 
 ### Avoiding Conflicts Between Agents
