@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@resonance/ui/components/button";
 import { Input } from "@resonance/ui/components/input";
 import { Textarea } from "@resonance/ui/components/textarea";
@@ -75,15 +76,21 @@ export function ExperienceForm({
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error ?? "Failed to save experience");
+        const message = data.error ?? "Failed to save experience";
+        setError(message);
+        toast.error(message);
         return;
       }
 
       resetForm();
       setOpen(false);
+      toast.success("Experience saved to Memory Bank");
       onSaved?.();
-    } catch {
-      setError("Network error — please try again");
+    } catch (error) {
+      const message = "Network error — please try again";
+      setError(message);
+      toast.error(message);
+      console.error("Save experience error:", error);
     } finally {
       setLoading(false);
     }
