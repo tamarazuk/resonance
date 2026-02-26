@@ -1,9 +1,17 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { useVoiceDictation } from "@/components/chat/useVoiceDictation";
+
+function resizeTextarea(el: HTMLTextAreaElement | null) {
+  if (!el) return;
+
+  el.style.height = "auto";
+  el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+}
 
 /**
- * Chat text input with bottom-border style, + button, mic placeholder, and send arrow.
+ * Chat text input with bottom-border style, + button, voice dictation, and send arrow.
  *
  * Matches Stitch design: minimal bottom-border input, no box border.
  * "AI ASSISTED CONTENT" label centered below.
@@ -17,17 +25,67 @@ export function ChatInput({
 }) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const resizeRafIdRef = useRef<number | null>(null);
+
+  const resizeCurrentTextarea = useCallback(() => {
+    resizeTextarea(textareaRef.current);
+  }, []);
+
+  const scheduleResizeCurrentTextarea = useCallback(() => {
+    if (resizeRafIdRef.current !== null) {
+      cancelAnimationFrame(resizeRafIdRef.current);
+    }
+
+    resizeRafIdRef.current = requestAnimationFrame(() => {
+      resizeRafIdRef.current = null;
+      resizeCurrentTextarea();
+    });
+  }, [resizeCurrentTextarea]);
+
+  useEffect(() => {
+    return () => {
+      if (resizeRafIdRef.current !== null) {
+        cancelAnimationFrame(resizeRafIdRef.current);
+      }
+    };
+  }, []);
+
+  const {
+    isVoiceSupported,
+    isListening,
+    voiceStatusMessage,
+    clearVoiceStatusMessage,
+    toggleVoiceDictation,
+    stopVoiceDictation,
+    resetVoiceDictation,
+  } = useVoiceDictation({
+    disabled,
+    inputValue: input,
+    onInputChange: setInput,
+    onAfterInputChange: scheduleResizeCurrentTextarea,
+  });
 
   const handleSend = useCallback(() => {
     const trimmed = input.trim();
     if (!trimmed || disabled) return;
+
+    if (isListening) {
+      stopVoiceDictation();
+    }
+
     onSend(trimmed);
     setInput("");
-    // Reset textarea height after clearing
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
-  }, [input, disabled, onSend]);
+    resetVoiceDictation();
+    scheduleResizeCurrentTextarea();
+  }, [
+    input,
+    disabled,
+    isListening,
+    onSend,
+    stopVoiceDictation,
+    resetVoiceDictation,
+    scheduleResizeCurrentTextarea,
+  ]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -37,11 +95,16 @@ export function ChatInput({
   }
 
   function handleInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    if (voiceStatusMessage) {
+      clearVoiceStatusMessage();
+    }
+
     setInput(e.target.value);
-    // Auto-resize textarea
-    const el = e.target;
-    el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+    resizeTextarea(e.target);
+  }
+
+  function handleVoiceToggle() {
+    toggleVoiceDictation();
   }
 
   return (
@@ -65,17 +128,39 @@ export function ChatInput({
           onKeyDown={handleKeyDown}
           placeholder="Type your response..."
           disabled={disabled}
+          readOnly={isListening}
+          aria-readonly={isListening}
           rows={1}
-          className="max-h-40 min-h-[1.5rem] flex-1 resize-none bg-transparent px-2 py-3 text-base font-light leading-6 text-foreground outline-none placeholder:text-muted-foreground/40 disabled:cursor-not-allowed disabled:opacity-50"
+          className="max-h-40 min-h-[1.5rem] flex-1 resize-none bg-transparent px-2 py-3 text-base font-light leading-6 text-foreground outline-none placeholder:text-muted-foreground/40 disabled:cursor-not-allowed disabled:opacity-50 read-only:cursor-default"
         />
 
-        {/* Voice dictation placeholder (non-functional in MVP) */}
+        {/* Voice dictation */}
         <button
           type="button"
-          disabled
-          className="p-3 text-muted-foreground/30 transition-colors hover:text-primary"
-          title="Voice dictation (coming soon)"
-          aria-label="Voice dictation (coming soon)"
+          disabled={disabled}
+          onClick={handleVoiceToggle}
+          className={`p-3 transition-colors disabled:text-muted-foreground/30 ${
+            !isVoiceSupported
+              ? "cursor-not-allowed text-muted-foreground/30"
+              : isListening
+                ? "text-primary"
+                : "text-muted-foreground/50 hover:text-primary"
+          }`}
+          title={
+            !isVoiceSupported
+              ? "Voice dictation is not supported in this browser"
+              : isListening
+                ? "Stop voice dictation"
+                : "Start voice dictation"
+          }
+          aria-label={
+            !isVoiceSupported
+              ? "Voice dictation is not supported in this browser"
+              : isListening
+                ? "Stop voice dictation"
+                : "Start voice dictation"
+          }
+          aria-pressed={isListening}
         >
           <MicIcon className="h-5 w-5" />
         </button>
@@ -97,6 +182,15 @@ export function ChatInput({
         <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/30">
           AI Assisted Content
         </p>
+        {voiceStatusMessage ? (
+          <p
+            role="status"
+            aria-live="polite"
+            className="mt-1 text-xs font-light text-muted-foreground"
+          >
+            {voiceStatusMessage}
+          </p>
+        ) : null}
       </div>
     </div>
   );
