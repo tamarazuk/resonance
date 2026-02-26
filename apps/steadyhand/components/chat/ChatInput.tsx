@@ -1,9 +1,102 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+
+type SpeechRecognitionResultAlternativeLike = {
+  transcript: string;
+};
+
+type SpeechRecognitionResultLike = {
+  isFinal: boolean;
+  length: number;
+  [index: number]: SpeechRecognitionResultAlternativeLike;
+};
+
+type SpeechRecognitionResultListLike = {
+  length: number;
+  [index: number]: SpeechRecognitionResultLike;
+};
+
+type SpeechRecognitionEventLike = {
+  resultIndex: number;
+  results: SpeechRecognitionResultListLike;
+};
+
+type SpeechRecognitionErrorEventLike = {
+  error: string;
+};
+
+type SpeechRecognitionLike = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+};
+
+type SpeechRecognitionConstructorLike = new () => SpeechRecognitionLike;
+
+function getSpeechRecognitionConstructor(): SpeechRecognitionConstructorLike | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const speechWindow = window as Window & {
+    SpeechRecognition?: SpeechRecognitionConstructorLike;
+    webkitSpeechRecognition?: SpeechRecognitionConstructorLike;
+  };
+
+  return (
+    speechWindow.SpeechRecognition ??
+    speechWindow.webkitSpeechRecognition ??
+    null
+  );
+}
+
+function resizeTextarea(el: HTMLTextAreaElement | null) {
+  if (!el) return;
+
+  el.style.height = "auto";
+  el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+}
+
+function combineTranscript(base: string, dictated: string) {
+  const normalizedBase = base.trimEnd();
+  const normalizedDictated = dictated.trim();
+
+  if (!normalizedDictated) {
+    return base;
+  }
+
+  if (!normalizedBase) {
+    return normalizedDictated;
+  }
+
+  return `${normalizedBase} ${normalizedDictated}`;
+}
+
+function mapSpeechError(errorCode: string) {
+  switch (errorCode) {
+    case "not-allowed":
+    case "service-not-allowed":
+      return "Microphone permission is blocked. Allow access and try again.";
+    case "audio-capture":
+      return "No microphone was detected. Check your microphone settings.";
+    case "network":
+      return "Voice dictation lost connection. Please try again.";
+    case "no-speech":
+      return "No speech detected. Try speaking a little louder.";
+    default:
+      return "Voice dictation failed. Please try again.";
+  }
+}
 
 /**
- * Chat text input with bottom-border style, + button, mic placeholder, and send arrow.
+ * Chat text input with bottom-border style, + button, voice dictation, and send arrow.
  *
  * Matches Stitch design: minimal bottom-border input, no box border.
  * "AI ASSISTED CONTENT" label centered below.
@@ -16,18 +109,121 @@ export function ChatInput({
   disabled?: boolean;
 }) {
   const [input, setInput] = useState("");
+  const [isVoiceSupported, setIsVoiceSupported] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceStatusMessage, setVoiceStatusMessage] = useState<string | null>(
+    null,
+  );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const dictationBaseRef = useRef("");
+  const finalTranscriptRef = useRef("");
+  const hadRecognitionErrorRef = useRef(false);
+
+  useEffect(() => {
+    setIsVoiceSupported(getSpeechRecognitionConstructor() !== null);
+  }, []);
+
+  useEffect(() => {
+    if (!disabled || !isListening) {
+      return;
+    }
+
+    recognitionRef.current?.stop();
+  }, [disabled, isListening]);
+
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.abort();
+      recognitionRef.current = null;
+    };
+  }, []);
+
+  const ensureRecognition = useCallback(() => {
+    if (recognitionRef.current) {
+      return recognitionRef.current;
+    }
+
+    const SpeechRecognition = getSpeechRecognitionConstructor();
+    if (!SpeechRecognition) {
+      return null;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event) => {
+      let interimTranscript = "";
+
+      for (
+        let index = event.resultIndex;
+        index < event.results.length;
+        index += 1
+      ) {
+        const result = event.results[index];
+        const segment = result[0]?.transcript?.trim() ?? "";
+
+        if (!segment) {
+          continue;
+        }
+
+        if (result.isFinal) {
+          finalTranscriptRef.current = combineTranscript(
+            finalTranscriptRef.current,
+            segment,
+          );
+        } else {
+          interimTranscript = combineTranscript(interimTranscript, segment);
+        }
+      }
+
+      const combinedDictation = combineTranscript(
+        finalTranscriptRef.current,
+        interimTranscript,
+      );
+      const nextValue = combineTranscript(
+        dictationBaseRef.current,
+        combinedDictation,
+      );
+
+      setInput(nextValue);
+      resizeTextarea(textareaRef.current);
+    };
+
+    recognition.onerror = (event) => {
+      hadRecognitionErrorRef.current = true;
+      setVoiceStatusMessage(mapSpeechError(event.error));
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      if (!hadRecognitionErrorRef.current) {
+        setVoiceStatusMessage(null);
+      }
+    };
+
+    recognitionRef.current = recognition;
+    return recognition;
+  }, []);
 
   const handleSend = useCallback(() => {
     const trimmed = input.trim();
     if (!trimmed || disabled) return;
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+    }
+
     onSend(trimmed);
     setInput("");
-    // Reset textarea height after clearing
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
-  }, [input, disabled, onSend]);
+    dictationBaseRef.current = "";
+    finalTranscriptRef.current = "";
+    setVoiceStatusMessage(null);
+    resizeTextarea(textareaRef.current);
+  }, [input, disabled, isListening, onSend]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -37,11 +233,47 @@ export function ChatInput({
   }
 
   function handleInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    if (voiceStatusMessage) {
+      setVoiceStatusMessage(null);
+    }
+
     setInput(e.target.value);
-    // Auto-resize textarea
-    const el = e.target;
-    el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+    resizeTextarea(e.target);
+  }
+
+  function handleVoiceToggle() {
+    if (disabled) {
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const recognition = ensureRecognition();
+    if (!recognition) {
+      setVoiceStatusMessage(
+        "Voice dictation is not supported in this browser.",
+      );
+      return;
+    }
+
+    dictationBaseRef.current = input;
+    finalTranscriptRef.current = "";
+    hadRecognitionErrorRef.current = false;
+    setVoiceStatusMessage("Listening...");
+
+    try {
+      recognition.start();
+      setIsListening(true);
+    } catch {
+      hadRecognitionErrorRef.current = true;
+      setVoiceStatusMessage(
+        "Unable to start voice dictation. Please try again.",
+      );
+      setIsListening(false);
+    }
   }
 
   return (
@@ -65,17 +297,32 @@ export function ChatInput({
           onKeyDown={handleKeyDown}
           placeholder="Type your response..."
           disabled={disabled}
+          readOnly={isListening}
           rows={1}
-          className="max-h-40 min-h-[1.5rem] flex-1 resize-none bg-transparent px-2 py-3 text-base font-light leading-6 text-foreground outline-none placeholder:text-muted-foreground/40 disabled:cursor-not-allowed disabled:opacity-50"
+          className="max-h-40 min-h-[1.5rem] flex-1 resize-none bg-transparent px-2 py-3 text-base font-light leading-6 text-foreground outline-none placeholder:text-muted-foreground/40 disabled:cursor-not-allowed disabled:opacity-50 read-only:cursor-default"
         />
 
-        {/* Voice dictation placeholder (non-functional in MVP) */}
+        {/* Voice dictation */}
         <button
           type="button"
-          disabled
-          className="p-3 text-muted-foreground/30 transition-colors hover:text-primary"
-          title="Voice dictation (coming soon)"
-          aria-label="Voice dictation (coming soon)"
+          disabled={disabled || !isVoiceSupported}
+          onClick={handleVoiceToggle}
+          className={`p-3 transition-colors disabled:text-muted-foreground/30 ${
+            isListening
+              ? "text-primary"
+              : "text-muted-foreground/50 hover:text-primary"
+          }`}
+          title={
+            !isVoiceSupported
+              ? "Voice dictation is not supported in this browser"
+              : isListening
+                ? "Stop voice dictation"
+                : "Start voice dictation"
+          }
+          aria-label={
+            isListening ? "Stop voice dictation" : "Start voice dictation"
+          }
+          aria-pressed={isListening}
         >
           <MicIcon className="h-5 w-5" />
         </button>
@@ -97,6 +344,15 @@ export function ChatInput({
         <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/30">
           AI Assisted Content
         </p>
+        {voiceStatusMessage ? (
+          <p
+            role="status"
+            aria-live="polite"
+            className="mt-1 text-xs font-light text-muted-foreground"
+          >
+            {voiceStatusMessage}
+          </p>
+        ) : null}
       </div>
     </div>
   );
