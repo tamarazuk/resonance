@@ -37,22 +37,30 @@ export default function NewApplicationPage() {
     setUrlError(null);
     setLoading(true);
 
-    const res = await fetch("/api/applications", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ externalUrl: url }),
-    });
+    try {
+      const res = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ externalUrl: url }),
+      });
+      const data = await res.json().catch(() => null);
 
-    setLoading(false);
+      if (!res.ok) {
+        setUrlError(getErrorMessage(data, "Failed to create application"));
+        return;
+      }
 
-    if (!res.ok) {
-      const data = await res.json();
-      setUrlError(getErrorMessage(data, "Failed to create application"));
-      return;
+      if (!hasApplicationId(data)) {
+        setUrlError("Failed to create application");
+        return;
+      }
+
+      router.push(`/dashboard/applications/${data.id}`);
+    } catch {
+      setUrlError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    const application = await res.json();
-    router.push(`/dashboard/applications/${application.id}`);
   }
 
   async function handleManualSubmit(e: React.FormEvent) {
@@ -60,24 +68,32 @@ export default function NewApplicationPage() {
     setManualError(null);
     setLoading(true);
 
-    const res = await fetch("/api/applications", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ manualJD: manualJD.trim() }),
-    });
+    try {
+      const res = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ manualJD: manualJD.trim() }),
+      });
+      const data = await res.json().catch(() => null);
 
-    setLoading(false);
+      if (!res.ok) {
+        setManualError(getErrorMessage(data, "Failed to create application"));
+        return;
+      }
 
-    if (!res.ok) {
-      const data = await res.json();
-      setManualError(getErrorMessage(data, "Failed to create application"));
-      return;
+      if (!hasApplicationId(data)) {
+        setManualError("Failed to create application");
+        return;
+      }
+
+      setDialogOpen(false);
+      setManualJD("");
+      router.push(`/dashboard/applications/${data.id}`);
+    } catch {
+      setManualError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    const application = await res.json();
-    setDialogOpen(false);
-    setManualJD("");
-    router.push(`/dashboard/applications/${application.id}`);
   }
 
   return (
@@ -238,24 +254,59 @@ function getErrorMessage(data: unknown, fallback: string): string {
   }
 
   const payload = data as { error?: unknown; details?: unknown };
+  const detailMessages = collectDetailMessages(payload.details);
 
-  if (
-    typeof payload.error === "string" &&
-    payload.details &&
-    typeof payload.details === "object"
-  ) {
-    const detailMessages = Object.values(
-      payload.details as Record<string, unknown>,
-    )
-      .flatMap((value) => (Array.isArray(value) ? value : []))
-      .filter((value): value is string => typeof value === "string");
+  if (typeof payload.error === "string" && detailMessages.length > 0) {
+    return `${payload.error}: ${detailMessages.join(", ")}`;
+  }
 
-    if (detailMessages.length > 0) {
-      return `${payload.error}: ${detailMessages.join(", ")}`;
-    }
+  if (detailMessages.length > 0) {
+    return detailMessages.join(", ");
   }
 
   return typeof payload.error === "string" ? payload.error : fallback;
+}
+
+function collectDetailMessages(details: unknown): string[] {
+  if (typeof details === "string") {
+    const value = details.trim();
+    return value.length > 0 ? [value] : [];
+  }
+
+  if (Array.isArray(details)) {
+    return details
+      .filter((value): value is string => typeof value === "string")
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+  }
+
+  if (!details || typeof details !== "object") {
+    return [];
+  }
+
+  return Object.values(details as Record<string, unknown>)
+    .flatMap((value) => {
+      if (typeof value === "string") {
+        return [value];
+      }
+      if (Array.isArray(value)) {
+        return value.filter(
+          (entry): entry is string => typeof entry === "string",
+        );
+      }
+      return [];
+    })
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+}
+
+function hasApplicationId(data: unknown): data is { id: string } {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "id" in data &&
+    typeof data.id === "string"
+  );
 }
 
 // ─── Icons ──────────────────────────────────────────────────────────────────────
