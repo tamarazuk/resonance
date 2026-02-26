@@ -1,98 +1,13 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
-
-type SpeechRecognitionResultAlternativeLike = {
-  transcript: string;
-};
-
-type SpeechRecognitionResultLike = {
-  isFinal: boolean;
-  length: number;
-  [index: number]: SpeechRecognitionResultAlternativeLike;
-};
-
-type SpeechRecognitionResultListLike = {
-  length: number;
-  [index: number]: SpeechRecognitionResultLike;
-};
-
-type SpeechRecognitionEventLike = {
-  resultIndex: number;
-  results: SpeechRecognitionResultListLike;
-};
-
-type SpeechRecognitionErrorEventLike = {
-  error: string;
-};
-
-type SpeechRecognitionLike = {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
-  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-};
-
-type SpeechRecognitionConstructorLike = new () => SpeechRecognitionLike;
-
-function getSpeechRecognitionConstructor(): SpeechRecognitionConstructorLike | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const speechWindow = window as Window & {
-    SpeechRecognition?: SpeechRecognitionConstructorLike;
-    webkitSpeechRecognition?: SpeechRecognitionConstructorLike;
-  };
-
-  return (
-    speechWindow.SpeechRecognition ??
-    speechWindow.webkitSpeechRecognition ??
-    null
-  );
-}
+import { useState, useRef, useCallback } from "react";
+import { useVoiceDictation } from "@/components/chat/useVoiceDictation";
 
 function resizeTextarea(el: HTMLTextAreaElement | null) {
   if (!el) return;
 
   el.style.height = "auto";
   el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
-}
-
-function combineTranscript(base: string, dictated: string) {
-  const normalizedBase = base.trimEnd();
-  const normalizedDictated = dictated.trim();
-
-  if (!normalizedDictated) {
-    return base;
-  }
-
-  if (!normalizedBase) {
-    return normalizedDictated;
-  }
-
-  return `${normalizedBase} ${normalizedDictated}`;
-}
-
-function mapSpeechError(errorCode: string) {
-  switch (errorCode) {
-    case "not-allowed":
-    case "service-not-allowed":
-      return "Microphone permission is blocked. Allow access and try again.";
-    case "audio-capture":
-      return "No microphone was detected. Check your microphone settings.";
-    case "network":
-      return "Voice dictation lost connection. Please try again.";
-    case "no-speech":
-      return "No speech detected. Try speaking a little louder.";
-    default:
-      return "Voice dictation failed. Please try again.";
-  }
 }
 
 /**
@@ -109,139 +24,48 @@ export function ChatInput({
   disabled?: boolean;
 }) {
   const [input, setInput] = useState("");
-  const [isVoiceSupported, setIsVoiceSupported] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [voiceStatusMessage, setVoiceStatusMessage] = useState<string | null>(
-    null,
-  );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
-  const dictationBaseRef = useRef("");
-  const finalTranscriptRef = useRef("");
-  const hadRecognitionErrorRef = useRef(false);
-  const isDictatingRef = useRef(false);
 
-  const stopDictation = useCallback((mode: "stop" | "abort" = "stop") => {
-    isDictatingRef.current = false;
-
-    if (mode === "abort") {
-      recognitionRef.current?.abort();
-      return;
-    }
-
-    recognitionRef.current?.stop();
+  const resizeCurrentTextarea = useCallback(() => {
+    resizeTextarea(textareaRef.current);
   }, []);
 
-  useEffect(() => {
-    setIsVoiceSupported(getSpeechRecognitionConstructor() !== null);
-  }, []);
-
-  useEffect(() => {
-    if (!disabled || !isListening) {
-      return;
-    }
-
-    stopDictation();
-  }, [disabled, isListening, stopDictation]);
-
-  useEffect(() => {
-    return () => {
-      stopDictation("abort");
-      recognitionRef.current = null;
-    };
-  }, [stopDictation]);
-
-  const ensureRecognition = useCallback(() => {
-    if (recognitionRef.current) {
-      return recognitionRef.current;
-    }
-
-    const SpeechRecognition = getSpeechRecognitionConstructor();
-    if (!SpeechRecognition) {
-      return null;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = "en-US";
-
-    recognition.onresult = (event) => {
-      if (!isDictatingRef.current) {
-        return;
-      }
-
-      let interimTranscript = "";
-
-      for (
-        let index = event.resultIndex;
-        index < event.results.length;
-        index += 1
-      ) {
-        const result = event.results[index];
-        const segment = result[0]?.transcript?.trim() ?? "";
-
-        if (!segment) {
-          continue;
-        }
-
-        if (result.isFinal) {
-          finalTranscriptRef.current = combineTranscript(
-            finalTranscriptRef.current,
-            segment,
-          );
-        } else {
-          interimTranscript = combineTranscript(interimTranscript, segment);
-        }
-      }
-
-      const combinedDictation = combineTranscript(
-        finalTranscriptRef.current,
-        interimTranscript,
-      );
-      const nextValue = combineTranscript(
-        dictationBaseRef.current,
-        combinedDictation,
-      );
-
-      setInput(nextValue);
-      resizeTextarea(textareaRef.current);
-    };
-
-    recognition.onerror = (event) => {
-      isDictatingRef.current = false;
-      hadRecognitionErrorRef.current = true;
-      setVoiceStatusMessage(mapSpeechError(event.error));
-      setIsListening(false);
-    };
-
-    recognition.onend = () => {
-      isDictatingRef.current = false;
-      setIsListening(false);
-      if (!hadRecognitionErrorRef.current) {
-        setVoiceStatusMessage(null);
-      }
-    };
-
-    recognitionRef.current = recognition;
-    return recognition;
-  }, []);
+  const {
+    isVoiceSupported,
+    isListening,
+    voiceStatusMessage,
+    clearVoiceStatusMessage,
+    toggleVoiceDictation,
+    stopVoiceDictation,
+    resetVoiceDictation,
+  } = useVoiceDictation({
+    disabled,
+    inputValue: input,
+    onInputChange: setInput,
+    onAfterInputChange: resizeCurrentTextarea,
+  });
 
   const handleSend = useCallback(() => {
     const trimmed = input.trim();
     if (!trimmed || disabled) return;
 
     if (isListening) {
-      stopDictation();
+      stopVoiceDictation();
     }
 
     onSend(trimmed);
     setInput("");
-    dictationBaseRef.current = "";
-    finalTranscriptRef.current = "";
-    setVoiceStatusMessage(null);
-    resizeTextarea(textareaRef.current);
-  }, [input, disabled, isListening, onSend, stopDictation]);
+    resetVoiceDictation();
+    resizeCurrentTextarea();
+  }, [
+    input,
+    disabled,
+    isListening,
+    onSend,
+    stopVoiceDictation,
+    resetVoiceDictation,
+    resizeCurrentTextarea,
+  ]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -252,7 +76,7 @@ export function ChatInput({
 
   function handleInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
     if (voiceStatusMessage) {
-      setVoiceStatusMessage(null);
+      clearVoiceStatusMessage();
     }
 
     setInput(e.target.value);
@@ -260,40 +84,7 @@ export function ChatInput({
   }
 
   function handleVoiceToggle() {
-    if (disabled) {
-      return;
-    }
-
-    if (isListening) {
-      stopDictation();
-      return;
-    }
-
-    const recognition = ensureRecognition();
-    if (!recognition) {
-      setVoiceStatusMessage(
-        "Voice dictation is not supported in this browser.",
-      );
-      return;
-    }
-
-    dictationBaseRef.current = input;
-    finalTranscriptRef.current = "";
-    hadRecognitionErrorRef.current = false;
-    setVoiceStatusMessage("Listening...");
-
-    try {
-      recognition.start();
-      isDictatingRef.current = true;
-      setIsListening(true);
-    } catch {
-      isDictatingRef.current = false;
-      hadRecognitionErrorRef.current = true;
-      setVoiceStatusMessage(
-        "Unable to start voice dictation. Please try again.",
-      );
-      setIsListening(false);
-    }
+    toggleVoiceDictation();
   }
 
   function handleVoiceKeyDown(e: React.KeyboardEvent<HTMLButtonElement>) {
