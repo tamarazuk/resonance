@@ -77,6 +77,13 @@ export function ExperienceForm({
     setError(null);
   }
 
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      resetForm();
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -124,7 +131,6 @@ export function ExperienceForm({
         return;
       }
 
-      if (!isEditing) resetForm();
       setOpen(false);
       onSaved?.();
     } catch {
@@ -135,7 +141,7 @@ export function ExperienceForm({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       {trigger && <DialogTrigger render={trigger} />}
       <DialogContent className="sm:max-w-lg">
         <form onSubmit={handleSubmit}>
