@@ -9,7 +9,7 @@ export default function DashboardApplicationsLoading() {
       aria-live="polite"
       aria-atomic="true"
     >
-      <span className="sr-only">Loading application form</span>
+      <span className="sr-only">Loading new application</span>
 
       <div className="w-full max-w-2xl">
         <Skeleton className="mb-8 h-4 w-40" />
