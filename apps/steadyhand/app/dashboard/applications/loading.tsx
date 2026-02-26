@@ -5,6 +5,9 @@ export default function DashboardApplicationsLoading() {
     <div
       className="flex flex-1 flex-col items-center px-6 py-10 sm:px-12"
       aria-busy="true"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
     >
       <span className="sr-only">Loading application form</span>
 
