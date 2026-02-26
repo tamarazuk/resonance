@@ -151,7 +151,6 @@ export function ChatInput({
                 ? "Stop voice dictation"
                 : "Start voice dictation"
           }
-          aria-disabled={!isVoiceSupported && !disabled}
           tabIndex={disabled ? -1 : 0}
           aria-pressed={isListening}
         >
