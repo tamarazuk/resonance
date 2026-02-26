@@ -61,7 +61,16 @@ export async function PUT(req: Request, { params }: RouteParams) {
     );
   }
 
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid JSON in request body" },
+      { status: 400 },
+    );
+  }
+
   const parsed = updateExperienceSchema.safeParse(body);
 
   if (!parsed.success) {
