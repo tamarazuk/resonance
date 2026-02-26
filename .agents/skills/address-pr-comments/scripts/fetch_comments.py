@@ -5,7 +5,7 @@ associated with the current git branch by shelling out to `gh api graphql`.
 
 Adapted from the gh-address-comments global skill with fixes:
   - Uses base repo (gh repo view) instead of head repo for correct fork PR support
-  - Adds --unresolved-only flag to filter to unresolved, non-outdated threads
+   - Adds --unresolved-only flag to filter to unresolved threads (includes outdated ones)
 
 Requires:
   - `gh auth login` already set up
@@ -249,7 +249,7 @@ def main() -> None:
     parser.add_argument(
         "--unresolved-only",
         action="store_true",
-        help="Only include unresolved, non-outdated review threads.",
+        help="Only include unresolved review threads (includes outdated threads whose diff context shifted).",
     )
     args = parser.parse_args()
 
@@ -261,9 +261,7 @@ def main() -> None:
 
     if args.unresolved_only:
         result["review_threads"] = [
-            t
-            for t in result["review_threads"]
-            if not t["isResolved"] and not t["isOutdated"]
+            t for t in result["review_threads"] if not t["isResolved"]
         ]
 
     print(json.dumps(result, indent=2))
