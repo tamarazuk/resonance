@@ -28,40 +28,72 @@ export default function NewApplicationPage() {
   const [url, setUrl] = useState("");
   const [manualJD, setManualJD] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [urlError, setUrlError] = useState<string | null>(null);
+  const [manualError, setManualError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   async function handleUrlSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    setUrlError(null);
     setLoading(true);
 
-    const res = await fetch("/api/applications", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ externalUrl: url }),
-    });
+    try {
+      const res = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ externalUrl: url }),
+      });
+      const data = await res.json().catch(() => null);
 
-    setLoading(false);
+      if (!res.ok) {
+        setUrlError(getErrorMessage(data, "Failed to create application"));
+        return;
+      }
 
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Failed to create application");
-      return;
+      if (!hasApplicationId(data)) {
+        setUrlError("Failed to create application");
+        return;
+      }
+
+      router.push(`/dashboard/applications/${data.id}`);
+    } catch {
+      setUrlError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    const application = await res.json();
-    router.push(`/dashboard/applications/${application.id}`);
   }
 
   async function handleManualSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    setManualError(null);
     setLoading(true);
 
-    // TODO: Add manual JD submission endpoint when ready
-    setLoading(false);
-    setDialogOpen(false);
+    try {
+      const res = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ manualJD: manualJD.trim() }),
+      });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        setManualError(getErrorMessage(data, "Failed to create application"));
+        return;
+      }
+
+      if (!hasApplicationId(data)) {
+        setManualError("Failed to create application");
+        return;
+      }
+
+      setDialogOpen(false);
+      setManualJD("");
+      router.push(`/dashboard/applications/${data.id}`);
+    } catch {
+      setManualError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -104,7 +136,9 @@ export default function NewApplicationPage() {
           {/* Form */}
           <div className="p-8 md:p-10">
             <form onSubmit={handleUrlSubmit} className="flex flex-col gap-8">
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              {urlError && (
+                <p className="text-sm text-destructive">{urlError}</p>
+              )}
 
               {/* URL section */}
               <div>
@@ -148,7 +182,13 @@ export default function NewApplicationPage() {
                   )}
                 </Button>
 
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <Dialog
+                  open={dialogOpen}
+                  onOpenChange={(open) => {
+                    setDialogOpen(open);
+                    setManualError(null);
+                  }}
+                >
                   <DialogTrigger
                     render={
                       <button
@@ -168,12 +208,18 @@ export default function NewApplicationPage() {
                         </DialogDescription>
                       </DialogHeader>
                       <div className="py-4">
+                        {manualError && (
+                          <p className="mb-3 text-sm text-destructive">
+                            {manualError}
+                          </p>
+                        )}
                         <Textarea
                           placeholder="Paste the job description here..."
                           value={manualJD}
                           onChange={(e) => setManualJD(e.target.value)}
                           rows={12}
                           required
+                          minLength={50}
                           className="font-light"
                         />
                       </div>
@@ -199,6 +245,67 @@ export default function NewApplicationPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function getErrorMessage(data: unknown, fallback: string): string {
+  if (!data || typeof data !== "object") {
+    return fallback;
+  }
+
+  const payload = data as { error?: unknown; details?: unknown };
+  const detailMessages = collectDetailMessages(payload.details);
+
+  if (typeof payload.error === "string" && detailMessages.length > 0) {
+    return `${payload.error}: ${detailMessages.join(", ")}`;
+  }
+
+  if (detailMessages.length > 0) {
+    return detailMessages.join(", ");
+  }
+
+  return typeof payload.error === "string" ? payload.error : fallback;
+}
+
+function collectDetailMessages(details: unknown): string[] {
+  if (typeof details === "string") {
+    const value = details.trim();
+    return value.length > 0 ? [value] : [];
+  }
+
+  if (Array.isArray(details)) {
+    return details
+      .filter((value): value is string => typeof value === "string")
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+  }
+
+  if (!details || typeof details !== "object") {
+    return [];
+  }
+
+  return Object.values(details as Record<string, unknown>)
+    .flatMap((value) => {
+      if (typeof value === "string") {
+        return [value];
+      }
+      if (Array.isArray(value)) {
+        return value.filter(
+          (entry): entry is string => typeof entry === "string",
+        );
+      }
+      return [];
+    })
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+}
+
+function hasApplicationId(data: unknown): data is { id: string } {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "id" in data &&
+    typeof data.id === "string"
   );
 }
 
