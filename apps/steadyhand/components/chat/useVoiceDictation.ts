@@ -216,6 +216,10 @@ export function useVoiceDictation({
       hadRecognitionErrorRef.current = true;
       setVoiceStatusMessage(mapSpeechError(event.error));
       setIsListening(false);
+
+      if (typeof recognition.abort === "function") {
+        recognition.abort();
+      }
     };
 
     recognition.onend = () => {
