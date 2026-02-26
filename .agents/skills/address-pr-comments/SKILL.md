@@ -38,7 +38,7 @@ This outputs JSON with the structure:
 }
 ```
 
-With `--unresolved-only`, review threads are pre-filtered to unresolved and non-outdated. Omit the flag to get everything.
+With `--unresolved-only`, review threads are pre-filtered to unresolved (but outdated threads are kept, since "outdated" only means the diff context shifted — the concern may still need addressing). Omit the flag to get everything.
 
 Extract `owner` and `repo` from the `pull_request` object for subsequent API calls.
 
@@ -49,7 +49,7 @@ Only process review thread comments that meet **all** of these criteria:
 - Comment author is **not** the PR author (skip self-comments)
 - Comment author is **not** a bot (skip authors ending in `[bot]`)
 
-If you did not use `--unresolved-only`, also filter out threads where `isResolved: true` or `isOutdated: true`.
+If you did not use `--unresolved-only`, also filter out threads where `isResolved: true`.
 
 Also check `conversation_comments` and `reviews` for any actionable feedback not captured in review threads.
 
