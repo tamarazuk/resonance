@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import LinkedIn from "next-auth/providers/linkedin";
 import { compare } from "bcryptjs";
-import { db, users } from "@resonance/db";
+import { db, users, accounts } from "@resonance/db";
 import { loginSchema } from "@resonance/types";
 
 declare module "next-auth" {
@@ -73,18 +73,62 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return true;
       }
 
+      if (!user.email) {
+        return false;
+      }
+
       const existingUser = await db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.email, user.email!),
+        where: (users, { eq }) => eq(users.email, user.email),
       });
 
       if (existingUser) {
+        await db
+          .insert(accounts)
+          .values({
+            userId: existingUser.id,
+            type: account.type ?? "oauth",
+            provider: account.provider,
+            providerAccountId: account.providerAccountId,
+            refreshToken: account.refresh_token ?? null,
+            accessToken: account.access_token ?? null,
+            expiresAt: account.expires_at
+              ? new Date(account.expires_at * 1000)
+              : null,
+            tokenType: account.token_type ?? null,
+            scope: account.scope ?? null,
+            idToken: account.id_token ?? null,
+          })
+          .onConflictDoNothing({
+            target: [accounts.provider, accounts.providerAccountId],
+          });
+        user.id = existingUser.id;
         return true;
       }
 
-      await db.insert(users).values({
-        email: user.email!,
-        fullName: user.name,
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          email: user.email,
+          fullName: user.name,
+        })
+        .returning({ id: users.id });
+
+      await db.insert(accounts).values({
+        userId: newUser.id,
+        type: account.type ?? "oauth",
+        provider: account.provider,
+        providerAccountId: account.providerAccountId,
+        refreshToken: account.refresh_token ?? null,
+        accessToken: account.access_token ?? null,
+        expiresAt: account.expires_at
+          ? new Date(account.expires_at * 1000)
+          : null,
+        tokenType: account.token_type ?? null,
+        scope: account.scope ?? null,
+        idToken: account.id_token ?? null,
       });
+
+      user.id = newUser.id;
 
       return true;
     },
