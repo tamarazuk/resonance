@@ -52,24 +52,23 @@ export async function POST(req: Request) {
     );
   }
 
-  const { rawInput } = parsed.data;
-  const situation = normalizeStar(
-    typeof body.situation === "string" ? body.situation : undefined,
-  );
-  const task = normalizeStar(
-    typeof body.task === "string" ? body.task : undefined,
-  );
-  const action = normalizeStar(
-    typeof body.action === "string" ? body.action : undefined,
-  );
-  const result = normalizeStar(
-    typeof body.result === "string" ? body.result : undefined,
-  );
-  const skills =
-    Array.isArray(body.skills) &&
-    body.skills.every((s: unknown) => typeof s === "string")
-      ? (body.skills as string[]).map((s) => s.trim()).filter((s) => s !== "")
-      : [];
+  const {
+    rawInput,
+    starStructure,
+    situation: flatSituation,
+    task: flatTask,
+    action: flatAction,
+    result: flatResult,
+    skills: parsedSkills,
+  } = parsed.data;
+
+  const situation = normalizeStar(starStructure?.situation ?? flatSituation);
+  const task = normalizeStar(starStructure?.task ?? flatTask);
+  const action = normalizeStar(starStructure?.action ?? flatAction);
+  const result = normalizeStar(starStructure?.result ?? flatResult);
+  const skills = (parsedSkills ?? [])
+    .map((skill) => skill.trim())
+    .filter((skill) => skill.length > 0);
 
   // Generate embedding if all STAR fields are provided
   const hasAllStarFields = situation && task && action && result;
