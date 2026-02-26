@@ -106,7 +106,6 @@ export async function POST(req: Request) {
       system: EXTRACT_EXPERIENCES_SYSTEM_PROMPT,
       prompt: userPrompt,
       temperature: 0.3,
-      maxTokens: 4000,
     });
     if (!content) {
       return NextResponse.json(
