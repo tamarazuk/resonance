@@ -109,6 +109,7 @@ export function ChatInput({
           placeholder="Type your response..."
           disabled={disabled}
           readOnly={isListening}
+          aria-readonly={isListening}
           rows={1}
           className="max-h-40 min-h-[1.5rem] flex-1 resize-none bg-transparent px-2 py-3 text-base font-light leading-6 text-foreground outline-none placeholder:text-muted-foreground/40 disabled:cursor-not-allowed disabled:opacity-50 read-only:cursor-default"
         />
