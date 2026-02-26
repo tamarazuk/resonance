@@ -73,7 +73,9 @@ export function CoverLetterSection({ application }: CoverLetterSectionProps) {
               : "Generate a cover letter after the fit analysis is complete."}
           </EmptyStateDescription>
           <EmptyStateAction>
-            <Button disabled={!hasFitAnalysis}>Generate Draft</Button>
+            <Button disabled={!hasFitAnalysis} onClick={handleGenerate}>
+              Generate Draft
+            </Button>
           </EmptyStateAction>
         </EmptyState>
       )}

@@ -83,7 +83,7 @@ Please write a professional cover letter tailored to this position.`;
     temperature: 0.4,
   });
 
-  const stream = result.toTextStream();
+  const stream = result.textStream;
 
   const encoder = new TextEncoder();
   const readable = new ReadableStream({

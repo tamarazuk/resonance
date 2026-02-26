@@ -25,6 +25,12 @@ export function StreamingCoverLetter({
   const contentRef = useRef<string>("");
   const abortRef = useRef<AbortController | null>(null);
 
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
   const startGeneration = useCallback(async () => {
     if (isLoading) return;
 
@@ -72,7 +78,15 @@ export function StreamingCoverLetter({
               const data: SseMessage = JSON.parse(line.slice(6));
 
               if (data.type === "text") {
-                contentRef.current = data.accumulated || contentRef.current;
+                const accumulated = data.accumulated ?? contentRef.current;
+                contentRef.current = accumulated;
+                const liveParagraphs = accumulated
+                  .split("\n\n")
+                  .map((p) => p.replace(/\n/g, " ").trim())
+                  .filter(Boolean);
+                setParagraphs(
+                  liveParagraphs.length ? liveParagraphs : [accumulated],
+                );
               } else if (data.type === "finish") {
                 setIsComplete(true);
                 if (data.paragraphs) {
