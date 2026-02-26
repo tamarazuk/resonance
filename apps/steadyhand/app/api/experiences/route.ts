@@ -3,7 +3,7 @@ import { db, experiences, desc, eq } from "@resonance/db";
 import { createExperienceSchema } from "@resonance/types";
 import { auth } from "@/lib/auth";
 import { generateEmbedding } from "@/lib/llm/embeddings";
-import { toExperience } from "./utils";
+import { normalizeStar, toExperience } from "./utils";
 
 /** GET /api/experiences — list all experiences for the authenticated user. */
 export async function GET() {
@@ -50,11 +50,18 @@ export async function POST(req: Request) {
   }
 
   const { rawInput } = parsed.data;
-  const situation =
-    typeof body.situation === "string" ? body.situation : undefined;
-  const task = typeof body.task === "string" ? body.task : undefined;
-  const action = typeof body.action === "string" ? body.action : undefined;
-  const result = typeof body.result === "string" ? body.result : undefined;
+  const situation = normalizeStar(
+    typeof body.situation === "string" ? body.situation : undefined,
+  );
+  const task = normalizeStar(
+    typeof body.task === "string" ? body.task : undefined,
+  );
+  const action = normalizeStar(
+    typeof body.action === "string" ? body.action : undefined,
+  );
+  const result = normalizeStar(
+    typeof body.result === "string" ? body.result : undefined,
+  );
   const skills =
     Array.isArray(body.skills) &&
     body.skills.every((s: unknown) => typeof s === "string")
