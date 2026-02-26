@@ -206,6 +206,28 @@ docker compose up -d
 pnpm db:push
 ```
 
+### Worktrees (OpenCode)
+
+When OpenCode creates a new worktree, set its init command to:
+
+```sh
+mise run worktree:init
+```
+
+What this does:
+
+- Installs dependencies
+- Starts the shared Docker Postgres container
+- Creates a worktree-specific database (for schema/data isolation)
+- Writes that database URL into `.env.local`
+- Applies the latest schema to that worktree database
+
+Optional manual cleanup before deleting a worktree:
+
+```sh
+mise run worktree:clean
+```
+
 ### Database Troubleshooting (PG18 + stale local volume)
 
 If `POST /api/auth/signup` or login routes fail with `ECONNREFUSED`, check Docker first.
