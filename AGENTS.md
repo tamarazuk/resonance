@@ -87,7 +87,7 @@ We track all work on the **Resonance Roadmap** GitHub Project (project #2, owner
 ### After Completing Work
 
 1. **Do NOT manually set Status to Done.** Instead, include `Closes #<issue-number>` in the PR body. GitHub automation will move the item to Done when the PR merges.
-2. If a draft PR already exists, mark it ready for review with `gh pr ready` and update the title/body as needed.
+2. **Keep the PR in draft.** Do not call `gh pr ready` — the user will mark it ready for review after inspecting the work. Update the PR title and body to reflect the final state of the changes.
 3. If work is incomplete or blocked, leave it as "In Progress" and note the blocker in your summary to the user.
 
 ### Avoiding Conflicts Between Agents

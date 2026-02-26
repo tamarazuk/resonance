@@ -50,10 +50,10 @@ Check if a PR already exists:
 gh pr view --json number,url,isDraft 2>/dev/null
 ```
 
-If **no PR exists**, create one:
+If **no PR exists**, create a **draft** PR:
 
 ```sh
-gh pr create --title "type(scope): summary" --body "$(cat <<'EOF'
+gh pr create --draft --title "type(scope): summary" --body "$(cat <<'EOF'
 ## Summary
 - Brief description of changes
 
@@ -65,10 +65,9 @@ EOF
 - Title should follow conventional commit style.
 - If the branch name contains an issue number, include `Closes #N` in the body. This is how the linked project board item gets moved to Done — **never** manually set the project status to Done.
 
-If a **draft PR already exists**, mark it ready for review and update the title/body to reflect the final state of the work:
+If a **draft PR already exists**, update the title and body to reflect the final state of the work, but **keep it in draft** — the user will mark it ready for review:
 
 ```sh
-gh pr ready
 gh pr edit --title "type(scope): final summary" --body "$(cat <<'EOF'
 ## Summary
 - Final description of changes
