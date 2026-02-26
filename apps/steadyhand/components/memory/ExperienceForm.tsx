@@ -76,7 +76,9 @@ export function ExperienceForm({
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error ?? "Failed to save experience");
+        const message = data.error ?? "Failed to save experience";
+        setError(message);
+        toast.error(message);
         return;
       }
 
@@ -84,8 +86,11 @@ export function ExperienceForm({
       setOpen(false);
       toast.success("Experience saved to Memory Bank");
       onSaved?.();
-    } catch {
-      toast.error("Network error — please try again");
+    } catch (error) {
+      const message = "Network error — please try again";
+      setError(message);
+      toast.error(message);
+      console.error("Save experience error:", error);
     } finally {
       setLoading(false);
     }

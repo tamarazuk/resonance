@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import { TooltipProvider } from "@resonance/ui/components/tooltip";
-import { Toaster } from "@resonance/ui";
+import { Toaster } from "@resonance/ui/components/sonner";
 import "./globals.css";
 
 const inter = Inter({
