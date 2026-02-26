@@ -96,11 +96,9 @@ export async function PUT(req: Request, { params }: RouteParams) {
   const action = normalizeStar(starStructure?.action ?? existing.action);
   const result = normalizeStar(starStructure?.result ?? existing.result);
 
-  // Decision: Only regenerate the embedding when STAR fields change.
-  // Embeddings are derived from semantic content (situation, task, action,
-  // result). Changes to skills or rawInput alone don't alter the vector
-  // representation used for similarity search in fit analysis and drafting.
-  // If skills are later included in embedding text, update this logic.
+  // Regenerate embedding when any content included in embeddingText changes.
+  // embeddingText is built from STAR fields + skills, so we must regenerate
+  // when either set changes to avoid stale vectors.
   const starFieldsChanged =
     starStructure !== undefined &&
     (situation !== existing.situation ||
@@ -108,8 +106,14 @@ export async function PUT(req: Request, { params }: RouteParams) {
       action !== existing.action ||
       result !== existing.result);
 
+  const skillsChanged =
+    skills !== undefined &&
+    JSON.stringify(skills) !== JSON.stringify(existing.skills);
+
+  const contentChanged = starFieldsChanged || skillsChanged;
+
   let embedding = existing.embedding;
-  if (starFieldsChanged) {
+  if (contentChanged) {
     if (situation && task && action && result) {
       const resolvedSkills = skills ?? existing.skills;
       const embeddingText = [
