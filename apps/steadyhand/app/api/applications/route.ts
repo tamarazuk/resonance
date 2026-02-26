@@ -68,10 +68,14 @@ export async function POST(req: Request) {
     jdSourceText = scrapeResult.markdown;
     persistedExternalUrl = externalUrl;
     rawHtml = scrapeResult.rawHtml ?? null;
-  } else {
-    // Zod validation ensures one of {externalUrl, manualJD} is present.
-    jdSourceText = manualJD as string;
+  } else if (manualJD) {
+    jdSourceText = manualJD;
     persistedExternalUrl = MANUAL_ENTRY_LABEL;
+  } else {
+    return NextResponse.json(
+      { error: "Invalid application payload" },
+      { status: 400 },
+    );
   }
 
   // 2. Parse the JD via LLM
