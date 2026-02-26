@@ -74,6 +74,7 @@ drizzle/meta/
 
 # Misc
 .vercel
-.claude
+.claude/*
+!.claude/commands/
 .todos/
 .sidecar/
