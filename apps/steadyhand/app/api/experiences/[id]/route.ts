@@ -89,16 +89,24 @@ export async function PUT(req: Request, { params }: RouteParams) {
       result !== existing.result);
 
   let embedding = existing.embedding;
-  if (starFieldsChanged && situation && task && action && result) {
-    const resolvedSkills = skills ?? existing.skills;
-    const embeddingText = [
-      `Situation: ${situation}`,
-      `Task: ${task}`,
-      `Action: ${action}`,
-      `Result: ${result}`,
-      `Skills: ${resolvedSkills.join(", ")}`,
-    ].join("\n");
-    embedding = await generateEmbedding(embeddingText);
+  if (starFieldsChanged) {
+    if (situation && task && action && result) {
+      const resolvedSkills = skills ?? existing.skills;
+      const embeddingText = [
+        `Situation: ${situation}`,
+        `Task: ${task}`,
+        `Action: ${action}`,
+        `Result: ${result}`,
+        `Skills: ${resolvedSkills.join(", ")}`,
+      ].join("\n");
+      try {
+        embedding = await generateEmbedding(embeddingText);
+      } catch {
+        embedding = null;
+      }
+    } else {
+      embedding = null;
+    }
   }
 
   const [updated] = await db
