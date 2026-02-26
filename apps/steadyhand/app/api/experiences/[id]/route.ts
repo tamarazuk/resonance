@@ -7,6 +7,9 @@ import { toExperience } from "../utils";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** GET /api/experiences/[id] — get a single experience by ID. */
 export async function GET(_req: Request, { params }: RouteParams) {
   const session = await auth();
@@ -16,6 +19,13 @@ export async function GET(_req: Request, { params }: RouteParams) {
   }
 
   const { id } = await params;
+
+  if (!UUID_RE.test(id)) {
+    return NextResponse.json(
+      { error: "Invalid experience ID" },
+      { status: 400 },
+    );
+  }
 
   const [experience] = await db
     .select()
@@ -43,6 +53,14 @@ export async function PUT(req: Request, { params }: RouteParams) {
   }
 
   const { id } = await params;
+
+  if (!UUID_RE.test(id)) {
+    return NextResponse.json(
+      { error: "Invalid experience ID" },
+      { status: 400 },
+    );
+  }
+
   const body = await req.json();
   const parsed = updateExperienceSchema.safeParse(body);
 
@@ -142,6 +160,13 @@ export async function DELETE(_req: Request, { params }: RouteParams) {
   }
 
   const { id } = await params;
+
+  if (!UUID_RE.test(id)) {
+    return NextResponse.json(
+      { error: "Invalid experience ID" },
+      { status: 400 },
+    );
+  }
 
   const [deleted] = await db
     .delete(experiences)
