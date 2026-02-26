@@ -84,5 +84,12 @@ export async function POST(req: Request) {
     })
     .returning();
 
-  return NextResponse.json(toExperience(created!), { status: 201 });
+  if (!created) {
+    return NextResponse.json(
+      { error: "Failed to create experience" },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json(toExperience(created), { status: 201 });
 }
