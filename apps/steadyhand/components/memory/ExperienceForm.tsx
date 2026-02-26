@@ -88,11 +88,11 @@ export function ExperienceForm({
         .map((s) => s.trim())
         .filter(Boolean);
 
-      const url = isEditing
+      const url = experience
         ? `/api/experiences/${experience.id}`
         : "/api/experiences";
 
-      const body = isEditing
+      const body = experience
         ? {
             rawInput,
             starStructure: {
@@ -113,7 +113,7 @@ export function ExperienceForm({
           };
 
       const res = await fetch(url, {
-        method: isEditing ? "PUT" : "POST",
+        method: experience ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
