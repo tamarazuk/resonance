@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useVoiceDictation } from "@/components/chat/useVoiceDictation";
 
 function resizeTextarea(el: HTMLTextAreaElement | null) {
@@ -25,9 +25,29 @@ export function ChatInput({
 }) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const resizeRafIdRef = useRef<number | null>(null);
 
   const resizeCurrentTextarea = useCallback(() => {
     resizeTextarea(textareaRef.current);
+  }, []);
+
+  const scheduleResizeCurrentTextarea = useCallback(() => {
+    if (resizeRafIdRef.current !== null) {
+      cancelAnimationFrame(resizeRafIdRef.current);
+    }
+
+    resizeRafIdRef.current = requestAnimationFrame(() => {
+      resizeRafIdRef.current = null;
+      resizeCurrentTextarea();
+    });
+  }, [resizeCurrentTextarea]);
+
+  useEffect(() => {
+    return () => {
+      if (resizeRafIdRef.current !== null) {
+        cancelAnimationFrame(resizeRafIdRef.current);
+      }
+    };
   }, []);
 
   const {
@@ -56,7 +76,7 @@ export function ChatInput({
     onSend(trimmed);
     setInput("");
     resetVoiceDictation();
-    resizeCurrentTextarea();
+    scheduleResizeCurrentTextarea();
   }, [
     input,
     disabled,
@@ -64,7 +84,7 @@ export function ChatInput({
     onSend,
     stopVoiceDictation,
     resetVoiceDictation,
-    resizeCurrentTextarea,
+    scheduleResizeCurrentTextarea,
   ]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
