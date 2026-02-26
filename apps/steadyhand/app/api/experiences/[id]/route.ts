@@ -75,7 +75,10 @@ export async function PUT(req: Request, { params }: RouteParams) {
 
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.flatten().fieldErrors },
+      {
+        error: "Validation failed",
+        details: parsed.error.flatten().fieldErrors,
+      },
       { status: 400 },
     );
   }
