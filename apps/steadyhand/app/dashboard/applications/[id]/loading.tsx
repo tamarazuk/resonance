@@ -5,6 +5,9 @@ export default function ApplicationDetailLoading() {
     <div
       className="flex flex-1 justify-center px-4 py-10 sm:px-6 lg:px-8"
       aria-busy="true"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
     >
       <span className="sr-only">Loading application details</span>
 
