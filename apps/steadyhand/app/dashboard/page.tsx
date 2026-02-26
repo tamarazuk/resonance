@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { Button } from "@resonance/ui/components/button";
 import {
@@ -10,6 +11,10 @@ import {
 import Link from "next/link";
 import type { Application } from "@resonance/types";
 import { ActiveApplicationsTable } from "@/components/dashboard/ActiveApplicationsTable";
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+};
 
 async function getApplications(): Promise<Application[]> {
   try {
