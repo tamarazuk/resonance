@@ -1,6 +1,12 @@
 Find the open PR for my current branch and address all unresolved review comments.
 Do not ask me for the PR number -- detect it from the branch using `gh pr view`.
 
+Use the bundled script to fetch comments:
+
+```sh
+python .agents/skills/address-pr-comments/scripts/fetch_comments.py --unresolved-only
+```
+
 For each unresolved comment:
 
 1. **Triage** -- decide whether to fix it or skip it.
