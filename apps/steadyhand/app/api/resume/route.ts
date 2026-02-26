@@ -35,9 +35,8 @@ const ExperienceSchema = z.object({
 const ExperiencesResponseSchema = z.array(ExperienceSchema);
 
 async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  // pdf-parse v2.4.5+ has complex ESM exports, use require for compatibility
-  const pdfParse = require("pdf-parse");
-  const data = await pdfParse(buffer);
+  const pdfParse = await import("pdf-parse");
+  const data = await pdfParse.default(buffer);
   return data.text;
 }
 
