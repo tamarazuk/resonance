@@ -87,17 +87,6 @@ export function ChatInput({
     toggleVoiceDictation();
   }
 
-  function handleVoiceKeyDown(e: React.KeyboardEvent<HTMLButtonElement>) {
-    if (
-      (e.key === "Enter" || e.key === " ") &&
-      !isVoiceSupported &&
-      !disabled
-    ) {
-      e.preventDefault();
-      handleVoiceToggle();
-    }
-  }
-
   return (
     <div>
       <div className="flex items-center border-b border-border transition-colors focus-within:border-primary">
@@ -129,7 +118,6 @@ export function ChatInput({
           type="button"
           disabled={disabled}
           onClick={handleVoiceToggle}
-          onKeyDown={handleVoiceKeyDown}
           className={`p-3 transition-colors disabled:text-muted-foreground/30 ${
             !isVoiceSupported
               ? "cursor-not-allowed text-muted-foreground/30"
