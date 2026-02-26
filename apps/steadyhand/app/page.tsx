@@ -74,21 +74,23 @@ export default async function Home() {
 
           <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
             <div className="flex max-w-xl flex-col">
-              <div className="mb-8 inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-medium uppercase tracking-wide text-primary">
-                AI-Powered Career Toolkit
-              </div>
+              <p className="mb-8 text-sm font-light italic text-primary/70">
+                for when the job search gets heavy
+              </p>
 
               <h1 className="mb-8 text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-                Job hunting,{" "}
+                You shouldn&apos;t have to{" "}
                 <span className="font-normal italic text-primary">
-                  simplified by AI
-                </span>
-                .
+                  burn out
+                </span>{" "}
+                before the interview starts.
               </h1>
 
               <p className="mt-2 max-w-md text-lg font-light leading-relaxed text-muted-foreground">
-                Experience a calmer, more organized approach to your career
-                search. We bring tranquility to the chaos of applications.
+                Job searching demands your best thinking at your worst moments.
+                Steadyhand takes the overhead off your plate — the research, the
+                prep, the follow-ups — so you have brainpower left when it
+                counts.
               </p>
 
               <div className="mt-12 flex flex-col gap-5 sm:flex-row">
@@ -96,7 +98,7 @@ export default async function Home() {
                   href="/signup"
                   className="flex h-12 items-center justify-center rounded-full bg-primary px-8 font-medium text-primary-foreground shadow-none transition-all hover:opacity-90"
                 >
-                  Start Free Trial
+                  Get Started Free
                 </Link>
                 <button className="flex h-12 items-center justify-center gap-2 rounded-full border border-border bg-transparent px-8 font-medium text-foreground transition-all hover:border-primary hover:text-primary">
                   <PlayIcon className="size-5" />
@@ -113,11 +115,11 @@ export default async function Home() {
             <div className="mb-16 flex flex-col justify-between gap-6 md:flex-row md:items-end">
               <div className="max-w-2xl">
                 <h2 className="text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
-                  Everything You Need
+                  Less noise. More clarity.
                 </h2>
                 <p className="mt-4 text-lg font-light text-muted-foreground">
-                  Tools designed to keep your job search organized and
-                  stress-free.
+                  Every feature exists to take something off your mind, not add
+                  to your to-do list.
                 </p>
               </div>
             </div>
@@ -152,12 +154,12 @@ export default async function Home() {
               <div className="space-y-10">
                 <div className="space-y-6">
                   <h2 className="text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
-                    Why Steadyhand?
+                    Built for how job searching actually feels.
                   </h2>
                   <p className="text-lg font-light text-muted-foreground">
-                    We&rsquo;ve reimagined the job search process to remove
-                    anxiety. Focus on your career goals while our AI handles the
-                    details.
+                    Most tools add tasks to your plate and call it organization.
+                    Steadyhand is different — it handles the cognitive overhead
+                    so you can show up as your best self when it matters.
                   </p>
                 </div>
 
@@ -181,10 +183,9 @@ export default async function Home() {
 
                 <Link
                   href="/signup"
-                  className="mt-4 inline-flex items-center gap-2 text-sm font-medium uppercase tracking-wide text-primary transition-colors hover:opacity-80"
+                  className="mt-4 inline-flex items-center text-sm font-medium tracking-wide text-primary transition-colors hover:opacity-80"
                 >
-                  Get started for free
-                  <ArrowRightIcon className="size-4" />
+                  Start your search with a clear head →
                 </Link>
               </div>
 
@@ -214,7 +215,7 @@ export default async function Home() {
                 </span>
               </div>
               <p className="mb-6 text-sm font-light text-muted-foreground">
-                Bringing peace to the professional journey.
+                A steady hand when yours is shaking.
               </p>
             </div>
 
@@ -347,60 +348,60 @@ export default async function Home() {
 
 const features = [
   {
-    title: "Smart Tracking",
+    title: "Memory Bank",
     description:
-      "Paste a job URL and we parse the listing automatically. Track every application status in one clean dashboard.",
+      "Your professional experiences, organized and searchable. Tell Steadyhand about a project you led or a conflict you resolved — it structures, tags, and stores it so you never blank on a story again.",
     icon: ClipboardCheckIcon,
   },
   {
-    title: "AI Career Coach",
+    title: "Triage Engine",
     description:
-      "Chat with an AI that knows your experience and goals. Get personalized advice, interview prep, and motivation.",
+      "Not every posting deserves a tailored cover letter. Steadyhand analyzes each opportunity for fit, effort, and timing — so you spend energy where it actually matters.",
     icon: SparklesIcon,
   },
   {
     title: "Fit Analysis",
     description:
-      "Instantly see how well your profile matches each role — keyword gaps, skill alignment, and actionable suggestions.",
+      "Paste a job posting and get an honest read: how well you match, what your strategic angle is, what the red flags are, and whether it's worth your time.",
     icon: TargetIcon,
   },
   {
     title: "Resume Tailoring",
     description:
-      "Generate a tailored resume for every application with one click. Highlight the right skills for each role.",
+      "Resumes generated from your real experiences, not templates. Steadyhand pulls from your Memory Bank to emphasize the stories that matter for each specific role.",
     icon: FileTextIcon,
   },
   {
     title: "Cover Letters",
     description:
-      "AI-crafted cover letters that match your voice and the job requirements. Edit, refine, and export in seconds.",
+      "Drafted in your voice, grounded in your actual experience, and connected to what the company cares about. Review, edit, and send — nothing goes out without your approval.",
     icon: PenToolIcon,
   },
   {
-    title: "Calm Interface",
+    title: "Calm Mode",
     description:
-      "Designed with cognitive load in mind. A clean, minimal workspace that reduces job search anxiety.",
+      "The 30 minutes before an interview is when anxiety peaks and memory fails. Calm Mode strips everything down to three key points, one opening story, and a clear head.",
     icon: SpaIcon,
   },
 ];
 
 const whyItems = [
   {
-    title: "Smart Tracking",
+    title: "Your career, remembered",
     description:
-      "Automatically organize every application in one dashboard. No more spreadsheet chaos.",
+      "Every experience, project, and story you share gets structured and stored. When an interview asks about handling ambiguity, your best stories are already waiting.",
     icon: CheckCircleIcon,
   },
   {
-    title: "AI Optimization",
+    title: "Prep without the panic",
     description:
-      "Tailor your resume and cover letter for every role with one click.",
+      "Before every interview, Steadyhand builds you a briefing: company research, likely questions matched to your stories, and talking points. You walk in prepared, not overwhelmed.",
     icon: SparklesIcon,
   },
   {
-    title: "Calm Interface",
+    title: "AI handles the overhead. You handle the moments.",
     description:
-      "Designed with cognitive load in mind. Reduce the anxiety of job hunting.",
+      "Research, drafts, follow-ups, deadlines — that's AI's job. The interview, the career decision, the gut feeling about culture fit — that's yours. The line is bright and non-negotiable.",
     icon: SpaIcon,
   },
 ];
@@ -441,24 +442,6 @@ function PlayIcon({ className }: { className?: string }) {
     >
       <circle cx="12" cy="12" r="10" />
       <polygon points="10 8 16 12 10 16 10 8" />
-    </svg>
-  );
-}
-
-function ArrowRightIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M5 12h14" />
-      <path d="m12 5 7 7-7 7" />
     </svg>
   );
 }
