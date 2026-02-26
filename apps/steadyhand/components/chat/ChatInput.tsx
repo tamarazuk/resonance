@@ -151,7 +151,6 @@ export function ChatInput({
                 ? "Stop voice dictation"
                 : "Start voice dictation"
           }
-          tabIndex={disabled ? -1 : 0}
           aria-pressed={isListening}
         >
           <MicIcon className="h-5 w-5" />
