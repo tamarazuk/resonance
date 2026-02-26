@@ -1,15 +1,24 @@
 import type { experiences } from "@resonance/db";
 import type { Experience as ExperienceType } from "@resonance/types";
 
+/** Normalize blank/whitespace-only STAR strings to null. */
+export function normalizeStar(value: string | null | undefined): string | null {
+  if (value == null) return null;
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
 /** Map flat DB columns to the nested Experience interface. */
 export function toExperience(
   row: typeof experiences.$inferSelect,
 ): ExperienceType {
+  const situation = normalizeStar(row.situation);
+  const task = normalizeStar(row.task);
+  const action = normalizeStar(row.action);
+  const result = normalizeStar(row.result);
+
   const hasAnyStarField =
-    row.situation !== null ||
-    row.task !== null ||
-    row.action !== null ||
-    row.result !== null;
+    situation !== null || task !== null || action !== null || result !== null;
 
   return {
     id: row.id,
@@ -17,10 +26,10 @@ export function toExperience(
     rawInput: row.rawInput,
     starStructure: hasAnyStarField
       ? {
-          situation: row.situation ?? "",
-          task: row.task ?? "",
-          action: row.action ?? "",
-          result: row.result ?? "",
+          situation: situation ?? "",
+          task: task ?? "",
+          action: action ?? "",
+          result: result ?? "",
         }
       : null,
     skills: row.skills,

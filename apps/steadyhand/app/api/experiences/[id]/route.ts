@@ -3,7 +3,7 @@ import { db, experiences, and, eq } from "@resonance/db";
 import { updateExperienceSchema } from "@resonance/types";
 import { auth } from "@/lib/auth";
 import { generateEmbedding } from "@/lib/llm/embeddings";
-import { toExperience } from "../utils";
+import { normalizeStar, toExperience } from "../utils";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -88,11 +88,13 @@ export async function PUT(req: Request, { params }: RouteParams) {
 
   const { rawInput, starStructure, skills } = parsed.data;
 
-  // Flatten starStructure back to individual DB columns
-  const situation = starStructure?.situation ?? existing.situation;
-  const task = starStructure?.task ?? existing.task;
-  const action = starStructure?.action ?? existing.action;
-  const result = starStructure?.result ?? existing.result;
+  // Flatten starStructure back to individual DB columns, normalizing blanks
+  const situation = normalizeStar(
+    starStructure?.situation ?? existing.situation,
+  );
+  const task = normalizeStar(starStructure?.task ?? existing.task);
+  const action = normalizeStar(starStructure?.action ?? existing.action);
+  const result = normalizeStar(starStructure?.result ?? existing.result);
 
   // Decision: Only regenerate the embedding when STAR fields change.
   // Embeddings are derived from semantic content (situation, task, action,
