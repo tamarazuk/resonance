@@ -83,5 +83,43 @@ Please write a professional cover letter tailored to this position.`;
     temperature: 0.4,
   });
 
-  return result.toTextStreamResponse();
+  const stream = result.toTextStream();
+
+  const encoder = new TextEncoder();
+  const readable = new ReadableStream({
+    async start(controller) {
+      let accumulatedText = "";
+
+      for await (const chunk of stream) {
+        accumulatedText += chunk;
+
+        const sseData = JSON.stringify({
+          type: "text",
+          value: chunk,
+          accumulated: accumulatedText,
+        });
+        controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
+      }
+
+      const paragraphs = accumulatedText
+        .split("\n\n")
+        .filter((p) => p.trim())
+        .map((p) => p.replace(/\n/g, " ").trim());
+
+      const finishData = JSON.stringify({
+        type: "finish",
+        paragraphs,
+      });
+      controller.enqueue(encoder.encode(`data: ${finishData}\n\n`));
+      controller.close();
+    },
+  });
+
+  return new Response(readable, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 }

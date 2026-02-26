@@ -18,42 +18,46 @@ export function StreamingCoverLetter({
   const contentRef = useRef<string>("");
 
   const { data, isLoading } = useSse({
-    api: `/api/applications/${applicationId}/stream-draft`,
+    api: `/api/applications/${applicationId}/stream-cover-letter`,
     method: "POST",
   });
 
   useEffect(() => {
     if (!data) return;
 
-    const message = data;
+    const message = data as {
+      type: string;
+      value?: string;
+      accumulated?: string;
+      paragraphs?: string[];
+    };
 
     if (message.type === "text") {
-      contentRef.current += message.value;
-      try {
-        const parsed = JSON.parse(contentRef.current);
-        if (parsed.coverLetterParagraphs) {
-          setParagraphs(parsed.coverLetterParagraphs);
-        }
-      } catch {
-        // Not complete JSON yet, keep accumulating
-      }
+      contentRef.current =
+        (message.accumulated || contentRef.current) + (message.value || "");
     } else if (message.type === "finish") {
       setIsComplete(true);
-      try {
-        const parsed = JSON.parse(contentRef.current);
-        if (parsed.coverLetterParagraphs) {
-          setParagraphs(parsed.coverLetterParagraphs);
-          onComplete?.(parsed.coverLetterParagraphs);
-        }
-      } catch {
-        // Failed to parse final result
+      if (message.paragraphs) {
+        setParagraphs(message.paragraphs);
+        onComplete?.(message.paragraphs);
       }
     }
   }, [data, onComplete]);
 
+  const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
+
   const handleCopy = async () => {
-    const fullText = paragraphs.join("\n\n");
-    await navigator.clipboard.writeText(fullText);
+    try {
+      const fullText = paragraphs.join("\n\n");
+      await navigator.clipboard.writeText(fullText);
+      setCopied(true);
+      setCopyError(false);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopyError(true);
+      setTimeout(() => setCopyError(false), 2000);
+    }
   };
 
   if (error) {
@@ -84,10 +88,21 @@ export function StreamingCoverLetter({
           <button
             type="button"
             onClick={handleCopy}
-            className="flex items-center gap-1.5 rounded-full border border-border px-4 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary/50 hover:text-primary"
+            className="flex items-center gap-1.5 rounded-full border border-border px-4 py-1.5 text-xs font-medium transition-all hover:border-primary/50 hover:text-primary"
           >
-            <CopyIcon className="h-3.5 w-3.5" />
-            Copy
+            {copyError ? (
+              <span className="text-destructive">Failed</span>
+            ) : copied ? (
+              <>
+                <CheckIcon className="h-3.5 w-3.5" />
+                Copied
+              </>
+            ) : (
+              <>
+                <CopyIcon className="h-3.5 w-3.5" />
+                Copy
+              </>
+            )}
           </button>
         )}
       </div>
@@ -119,6 +134,23 @@ function CopyIcon({ className }: { className?: string }) {
     >
       <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
       <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+    </svg>
+  );
+}
+
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M20 6 9 17l-5-5" />
     </svg>
   );
 }
