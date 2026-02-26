@@ -29,8 +29,8 @@ Given a parsed job description and a candidate's experiences, produce a fit anal
 - matchingSkills: Skills the candidate has that match the JD (be specific)
 - missingSkills: Key skills in the JD the candidate lacks
 - recommendations: 2-3 actionable advice for the application
-- strengths: Key strengths the candidate brings (specific achievements, metrics Areas where the candidate)
-- gaps: falls short (be honest but constructive)
+- strengths: Key strengths the candidate brings (specific achievements, metrics)
+- gaps: Areas where the candidate falls short (be honest but constructive)
 
 Be honest and specific. Focus on transferable skills that could bridge gaps. Respond with valid JSON.`;
 
