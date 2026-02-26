@@ -35,7 +35,7 @@ export function ExperienceForm({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onSaved?: () => void;
-  trigger?: React.ReactNode;
+  trigger?: React.ReactElement;
 }) {
   const isEditing = !!experience;
 
@@ -136,7 +136,7 @@ export function ExperienceForm({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {trigger && <DialogTrigger render={trigger as React.JSX.Element} />}
+      {trigger && <DialogTrigger render={trigger} />}
       <DialogContent className="sm:max-w-lg">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
