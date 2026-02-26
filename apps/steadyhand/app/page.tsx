@@ -203,120 +203,16 @@ export default async function Home() {
       {/* ── Footer ──────────────────────────────────────────────────────── */}
       <footer className="border-t border-border bg-card pb-12 pt-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="mb-16 grid grid-cols-2 gap-12 md:grid-cols-4">
-            {/* Brand */}
-            <div className="col-span-2 md:col-span-1">
-              <div className="mb-6 flex items-center gap-2">
-                <div className="flex size-6 items-center justify-center text-primary">
-                  <SteadyhandIcon className="size-5" />
-                </div>
-                <span className="text-base font-medium text-foreground">
-                  Steadyhand
-                </span>
-              </div>
-              <p className="mb-6 text-sm font-light text-muted-foreground">
-                A steady hand when yours is shaking.
-              </p>
+          <div className="mb-16 flex flex-col items-center text-center">
+            <div className="mb-4 text-primary">
+              <SteadyhandIcon className="size-16" />
             </div>
-
-            {/* Product */}
-            <div>
-              <h3 className="mb-6 text-xs font-semibold uppercase tracking-wider text-foreground">
-                Product
-              </h3>
-              <ul className="space-y-4">
-                <li>
-                  <a
-                    className="text-sm font-light text-muted-foreground hover:text-primary"
-                    href="#features"
-                  >
-                    Features
-                  </a>
-                </li>
-                <li>
-                  <a
-                    className="text-sm font-light text-muted-foreground hover:text-primary"
-                    href="#"
-                  >
-                    Pricing
-                  </a>
-                </li>
-                <li>
-                  <a
-                    className="text-sm font-light text-muted-foreground hover:text-primary"
-                    href="#"
-                  >
-                    Changelog
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Resources */}
-            <div>
-              <h3 className="mb-6 text-xs font-semibold uppercase tracking-wider text-foreground">
-                Resources
-              </h3>
-              <ul className="space-y-4">
-                <li>
-                  <a
-                    className="text-sm font-light text-muted-foreground hover:text-primary"
-                    href="#"
-                  >
-                    Documentation
-                  </a>
-                </li>
-                <li>
-                  <a
-                    className="text-sm font-light text-muted-foreground hover:text-primary"
-                    href="#"
-                  >
-                    Blog
-                  </a>
-                </li>
-                <li>
-                  <a
-                    className="text-sm font-light text-muted-foreground hover:text-primary"
-                    href="#"
-                  >
-                    Community
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Company */}
-            <div>
-              <h3 className="mb-6 text-xs font-semibold uppercase tracking-wider text-foreground">
-                Company
-              </h3>
-              <ul className="space-y-4">
-                <li>
-                  <a
-                    className="text-sm font-light text-muted-foreground hover:text-primary"
-                    href="#"
-                  >
-                    About
-                  </a>
-                </li>
-                <li>
-                  <a
-                    className="text-sm font-light text-muted-foreground hover:text-primary"
-                    href="#"
-                  >
-                    Legal
-                  </a>
-                </li>
-                <li>
-                  <a
-                    className="text-sm font-light text-muted-foreground hover:text-primary"
-                    href="#"
-                  >
-                    Contact
-                  </a>
-                </li>
-              </ul>
-            </div>
+            <span className="mb-4 text-2xl font-medium text-foreground">
+              Steadyhand
+            </span>
+            <p className="text-sm font-light text-muted-foreground">
+              A steady hand when yours is shaking.
+            </p>
           </div>
 
           <div className="flex flex-col items-center justify-between gap-4 border-t border-border pt-8 md:flex-row">
