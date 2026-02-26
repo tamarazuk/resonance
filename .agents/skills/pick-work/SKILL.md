@@ -58,9 +58,22 @@ For each recommendation, explain:
 
 **Do not change any statuses yet.** Present the recommendations and ask the user which item(s) they want to pick up.
 
+- You may use a direct question with selectable options so the user can pick quickly.
+- Treat explicit confirmations like `plan issue 123` as immediate confirmation.
+
+If the user confirms a specific issue pick (including phrases like `plan issue X`), treat that as confirmation and claim immediately before any repo exploration.
+
 ## Claiming an item
 
-Once the user confirms, **immediately** claim the item by setting its status to Planning (per the AGENTS.md protocol, claim before any exploration or coding):
+Once the user confirms, run this checklist in strict order:
+
+1. View the issue first:
+
+```sh
+gh issue view <ISSUE_NUMBER>
+```
+
+2. **Immediately** claim the item by setting its status to Planning (per the AGENTS.md protocol, claim before any exploration or coding):
 
 ```sh
 gh project item-edit --project-id "PVT_kwHOADQ5Ws4BQKPh" \
@@ -69,7 +82,8 @@ gh project item-edit --project-id "PVT_kwHOADQ5Ws4BQKPh" \
   --single-select-option-id "63bc7529"
 ```
 
-Then create a feature branch and begin work following the protocol in `AGENTS.md`.
+3. Only then create a feature branch and begin repo exploration/planning following `AGENTS.md`.
+4. Return a concise implementation plan and wait for user approval before coding.
 
 ## Project Board Reference
 

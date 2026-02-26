@@ -90,3 +90,77 @@ run = "docker compose down"
 [tasks."docker:clean"]
 description = "Stop infrastructure and remove volumes"
 run = "docker compose down -v"
+
+[tasks."worktree:init"]
+description = "Initialize this worktree with its own local database"
+run = """
+pnpm install
+docker compose up -d
+echo "Waiting for Postgres to be ready..."
+MAX_ATTEMPTS=60
+ATTEMPT=1
+until docker compose exec -T postgres pg_isready -U ${POSTGRES_USER:-resonance} -d ${POSTGRES_DB:-resonance_dev} > /dev/null 2>&1; do
+  if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
+    echo "Postgres did not become ready within 60s."
+    echo "Check: docker compose ps"
+    echo "Check: docker compose logs --tail=100 postgres"
+    exit 1
+  fi
+  ATTEMPT=$((ATTEMPT + 1))
+  sleep 1
+done
+
+RAW_WORKTREE=$(git branch --show-current)
+if [ -z "$RAW_WORKTREE" ]; then
+  RAW_WORKTREE=$(basename "$PWD")
+fi
+
+WORKTREE_SLUG=$(printf "%s" "$RAW_WORKTREE" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '_' | sed 's/^_//; s/_$//')
+if [ -z "$WORKTREE_SLUG" ]; then
+  WORKTREE_SLUG="default"
+fi
+
+WORKTREE_DB="resonance_wt_${WORKTREE_SLUG}"
+WORKTREE_DB=$(printf "%.63s" "$WORKTREE_DB")
+
+docker compose exec -T postgres psql -U ${POSTGRES_USER:-resonance} -d postgres -c "CREATE DATABASE \"$WORKTREE_DB\";" > /dev/null 2>&1 || true
+
+DB_URL="postgresql://${POSTGRES_USER:-resonance}:${POSTGRES_PASSWORD:-resonance_dev_password}@localhost:5432/${WORKTREE_DB}"
+
+touch .env.local
+grep -v '^DATABASE_URL=' .env.local > .env.local.tmp || true
+mv .env.local.tmp .env.local
+printf 'DATABASE_URL="%s"\n' "$DB_URL" >> .env.local
+printf '%s\n' "$WORKTREE_DB" > .worktree-db
+
+DATABASE_URL="$DB_URL" pnpm --filter @resonance/db exec drizzle-kit push --force
+
+echo "Worktree DB ready: $WORKTREE_DB"
+echo "DATABASE_URL written to .env.local"
+"""
+
+[tasks."worktree:clean"]
+description = "Drop this worktree database and clean local marker"
+run = """
+if [ -f .worktree-db ]; then
+  WORKTREE_DB=$(cat .worktree-db)
+else
+  WORKTREE_DB=$(awk -F'/' '/^DATABASE_URL=/{print $4}' .env.local | awk -F'"' '{print $1}' | tail -n 1)
+fi
+
+if [ -z "$WORKTREE_DB" ]; then
+  echo "No worktree DB found in .worktree-db or .env.local"
+  exit 0
+fi
+
+docker compose up -d
+docker compose exec -T postgres psql -U ${POSTGRES_USER:-resonance} -d postgres -c "DROP DATABASE IF EXISTS \"$WORKTREE_DB\" WITH (FORCE);"
+
+rm -f .worktree-db
+if [ -f .env.local ]; then
+  grep -v '^DATABASE_URL=' .env.local > .env.local.tmp || true
+  mv .env.local.tmp .env.local
+fi
+
+echo "Dropped worktree DB: $WORKTREE_DB"
+"""

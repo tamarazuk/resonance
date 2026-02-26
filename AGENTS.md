@@ -25,11 +25,25 @@
   - Branch: `.../issue-<number>-...`
   - PR title: `<type>(<scope>): <summary> (#<number>)`
   - PR footer: `Closes #<number>`
-- While the task-tracking protocol is paused, do not change project item status unless explicitly requested by the user.
 
 ## Task Tracking — GitHub Projects
 
 We track all work on the **Resonance Roadmap** GitHub Project (project #2, owner `tamarazuk`). Every agent working in this repo must follow this protocol.
+
+### Immediate Claim Rule
+
+- **"If user confirms an issue pick (including phrases like `plan issue X`), immediately set it to Planning before any repo exploration."**
+
+### End-to-End Flow (authoritative)
+
+1. User runs pick-work -> agent suggests safe Todo items.
+2. User confirms an issue (including `plan issue X`) -> agent runs `gh issue view`, then immediately sets project item to **Planning**.
+3. Agent explores and returns a plan -> waits for user implementation approval.
+4. User approves implementation -> agent sets item to **In Progress** before code edits.
+5. Agent implements in chunks, opens/keeps a **draft PR**, and pushes atomic commits as practical.
+6. After creating/updating the PR, agent updates issue line 1 to `# PR: #<number>` using `.agents/scripts/sync_issue_pr_header.py`.
+7. When implementation is complete, agent moves PR to ready (`gh pr ready`) and returns the PR URL.
+8. If new review comments arrive, agent continues follow-up commits/pushes until resolved.
 
 ### Project IDs (for `gh project item-edit`)
 
@@ -51,21 +65,28 @@ We track all work on the **Resonance Roadmap** GitHub Project (project #2, owner
    gh project item-list 2 --owner tamarazuk --format json
    ```
 2. **Only pick up items with Status = Todo.** If an item is already "Planning" or "In Progress", another agent is working on it — do not touch it.
-3. **Claim the item immediately** by setting Status to "Planning" before any exploration or planning:
-   ```sh
-   gh project item-edit --project-id "PVT_kwHOADQ5Ws4BQKPh" \
-     --id "<ITEM_ID>" \
-     --field-id "PVTSSF_lAHOADQ5Ws4BQKPhzg-XDYc" \
-     --single-select-option-id "63bc7529"
-   ```
-4. **Move to "In Progress" when you start coding:**
+3. **Required checklist (strict order) after user confirms an issue pick** (including `plan issue X`):
+   1. View the issue first:
+      ```sh
+      gh issue view <ISSUE_NUMBER>
+      ```
+   2. Immediately claim the linked project item by setting Status to "Planning":
+      ```sh
+      gh project item-edit --project-id "PVT_kwHOADQ5Ws4BQKPh" \
+        --id "<ITEM_ID>" \
+        --field-id "PVTSSF_lAHOADQ5Ws4BQKPhzg-XDYc" \
+        --single-select-option-id "63bc7529"
+      ```
+   3. Only then do repo exploration and planning.
+4. **Return a plan and wait for implementation approval.** Do not start coding until the user approves the plan (e.g. "implement", "build this", "go ahead").
+5. **Move to "In Progress" when you start coding (before code edits):**
    ```sh
    gh project item-edit --project-id "PVT_kwHOADQ5Ws4BQKPh" \
      --id "<ITEM_ID>" \
      --field-id "PVTSSF_lAHOADQ5Ws4BQKPhzg-XDYc" \
      --single-select-option-id "47fc9ee4"
    ```
-5. **Work in a feature branch** (not main). Branch naming: `feat/<short-description>`, `fix/<short-description>`.
+6. **Work in a feature branch** (not main). Branch naming: `feat/<short-description>`, `fix/<short-description>`.
 
 ### During Work
 
@@ -82,13 +103,27 @@ We track all work on the **Resonance Roadmap** GitHub Project (project #2, owner
    )"
    ```
 
-2. **Push after each logical commit.** Never leave work only in a local worktree. If the session ends unexpectedly, unpushed commits are at risk of being lost.
+2. **Update the linked issue description with the PR number at the top.** After creating or updating the PR, edit the linked issue body so line 1 is exactly `# PR: #<number>`.
+   - Keep the existing issue description content intact.
+   - If line 1 already starts with `# PR: #`, replace it with the current PR number.
+   - Do this for both newly created PRs and already-existing PRs.
+   - Use the shared script:
+     ```sh
+     python .agents/scripts/sync_issue_pr_header.py --issue-number <ISSUE_NUMBER>
+     ```
+3. **Commit and push in logical chunks.** Prefer atomic commits where practical: complete one chunk, commit, push; then continue. Never leave work only in a local worktree.
+4. **Keep the PR in draft while implementation is still in progress.**
 
 ### After Completing Work
 
 1. **Do NOT manually set Status to Done.** Instead, include `Closes #<issue-number>` in the PR body. GitHub automation will move the item to Done when the PR merges.
-2. **Keep the PR in draft.** Do not call `gh pr ready` — the user will mark it ready for review after inspecting the work. Update the PR title and body to reflect the final state of the changes.
-3. If work is incomplete or blocked, leave it as "In Progress" and note the blocker in your summary to the user.
+2. **When implementation is complete, move the PR to ready for review and return the PR URL to the user.**
+   ```sh
+   gh pr ready
+   gh pr view --json url --jq '.url'
+   ```
+3. **If additional PR review comments arrive, continue with follow-up commits and pushes until resolved.**
+4. If work is incomplete or blocked, leave it as "In Progress" and note the blocker in your summary to the user.
 
 ### Avoiding Conflicts Between Agents
 
