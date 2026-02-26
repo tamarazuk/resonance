@@ -99,7 +99,9 @@ export function useVoiceDictation({
   onInputChange,
   onAfterInputChange,
 }: UseVoiceDictationOptions) {
-  const [isVoiceSupported, setIsVoiceSupported] = useState(false);
+  const [isVoiceSupported] = useState(
+    () => getSpeechRecognitionConstructor() !== null,
+  );
   const [isListening, setIsListening] = useState(false);
   const [voiceStatusMessage, setVoiceStatusMessage] = useState<string | null>(
     null,
@@ -133,10 +135,6 @@ export function useVoiceDictation({
 
   const clearVoiceStatusMessage = useCallback(() => {
     setVoiceStatusMessage(null);
-  }, []);
-
-  useEffect(() => {
-    setIsVoiceSupported(getSpeechRecognitionConstructor() !== null);
   }, []);
 
   useEffect(() => {
