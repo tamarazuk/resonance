@@ -11,13 +11,16 @@ import {
   asc,
   isNull,
 } from "@resonance/db";
-import type { TriageAction } from "@resonance/types";
+import type { TriageAction, TriageActionPriority } from "@resonance/types";
 import { auth } from "@/lib/auth";
+import { MANUAL_ENTRY_LABEL } from "@/lib/applications/constants";
 import { subDays } from "date-fns";
 
-const MANUAL_ENTRY_LABEL = "Manual Entry";
-
-const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+const priorityOrder: Record<TriageActionPriority, number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
+};
 
 function getCompanyName(url: string): string {
   if (url === MANUAL_ENTRY_LABEL) return "your manual entry";
