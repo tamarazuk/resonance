@@ -5,10 +5,11 @@ import {
   CardDescription,
   CardContent,
   CardAction,
-} from "@resonance/ui/components/card"
-import { Badge } from "@resonance/ui/components/badge"
-import { Button } from "@resonance/ui/components/button"
-import Link from "next/link"
+} from "@resonance/ui/components/card";
+import { Badge } from "@resonance/ui/components/badge";
+import { Button } from "@resonance/ui/components/button";
+import Link from "next/link";
+import type { TriageAction } from "@resonance/types";
 
 /**
  * Card for a single high-priority action item on the triage dashboard.
@@ -17,27 +18,18 @@ import Link from "next/link"
  * "Complete fit analysis for Senior Engineer @ Acme".
  */
 
-type TriageAction = {
-  id: string
-  title: string
-  description: string
-  priority: "high" | "medium" | "low"
-  type: "review_story" | "follow_up" | "complete_analysis" | "general"
-  href: string
-}
-
 const priorityStyles = {
   high: "destructive",
   medium: "outline",
   low: "secondary",
-} as const
+} as const;
 
 const typeLabels: Record<TriageAction["type"], string> = {
   review_story: "Review",
   follow_up: "Follow Up",
   complete_analysis: "Analysis",
   general: "Action",
-}
+};
 
 export function TriageCard({ action }: { action: TriageAction }) {
   return (
@@ -68,10 +60,8 @@ export function TriageCard({ action }: { action: TriageAction }) {
         </Button>
       </CardContent>
     </Card>
-  )
+  );
 }
-
-export type { TriageAction }
 
 function ArrowRightIcon({ className }: { className?: string }) {
   return (
@@ -88,5 +78,5 @@ function ArrowRightIcon({ className }: { className?: string }) {
       <path d="M5 12h14" />
       <path d="m12 5 7 7-7 7" />
     </svg>
-  )
+  );
 }

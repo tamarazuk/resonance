@@ -9,21 +9,12 @@ import {
   EmptyStateAction,
 } from "@resonance/ui/components/empty-state";
 import Link from "next/link";
-import type { Application } from "@resonance/types";
+import type { Application, TriageAction } from "@resonance/types";
 import { ActiveApplicationsTable } from "@/components/dashboard/ActiveApplicationsTable";
 import { TriageCard } from "@/components/dashboard/TriageCard";
 
 export const metadata: Metadata = {
   title: "Dashboard",
-};
-
-type TriageAction = {
-  id: string;
-  title: string;
-  description: string;
-  priority: "high" | "medium" | "low";
-  type: "review_story" | "follow_up" | "complete_analysis" | "general";
-  href: string;
 };
 
 async function getApplications(): Promise<Application[]> {

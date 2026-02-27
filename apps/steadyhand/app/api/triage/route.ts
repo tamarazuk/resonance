@@ -10,17 +10,9 @@ import {
   asc,
   isNull,
 } from "@resonance/db";
+import type { TriageAction } from "@resonance/types";
 import { auth } from "@/lib/auth";
 import { subDays } from "date-fns";
-
-type TriageAction = {
-  id: string;
-  title: string;
-  description: string;
-  priority: "high" | "medium" | "low";
-  type: "review_story" | "follow_up" | "complete_analysis" | "general";
-  href: string;
-};
 
 function getCompanyName(url: string): string {
   if (url === "Manual Entry") return "your manual entry";
