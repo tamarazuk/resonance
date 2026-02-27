@@ -118,8 +118,11 @@ export function ResumeUpload({ onUploaded }: { onUploaded?: () => void }) {
         });
 
         if (!res.ok) {
-          const data = await res.json();
-          setError(data.error ?? "Failed to save experience");
+          const errorMessage = await getResponseErrorMessage(
+            res,
+            "Failed to save experience",
+          );
+          setError(errorMessage);
           return;
         }
       }
