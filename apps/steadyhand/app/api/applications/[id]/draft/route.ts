@@ -63,7 +63,7 @@ export async function POST(req: Request, { params }: RouteParams) {
           coverLetterParagraphs: body.coverLetterParagraphs,
         },
       })
-      .where(eq(applications.id, id))
+      .where(and(eq(applications.id, id), eq(applications.userId, userId)))
       .returning();
 
     return NextResponse.json(updated);
@@ -107,7 +107,7 @@ export async function POST(req: Request, { params }: RouteParams) {
       fitAnalysis: fitResult.data,
       draftedMaterials: draftResult.data,
     })
-    .where(eq(applications.id, id))
+    .where(and(eq(applications.id, id), eq(applications.userId, userId)))
     .returning();
 
   return NextResponse.json(updated);
