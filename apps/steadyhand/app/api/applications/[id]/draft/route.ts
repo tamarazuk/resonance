@@ -49,7 +49,7 @@ export async function POST(req: Request, { params }: RouteParams) {
       .update(applications)
       .set({
         draftedMaterials: {
-          ...existingMaterials,
+          resumeBullets: existingMaterials?.resumeBullets ?? [],
           coverLetterParagraphs: body.coverLetterParagraphs,
         },
       })
