@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Application } from "@resonance/types";
 import { CoverLetter } from "@/components/applications/CoverLetter";
 import { StreamingCoverLetter } from "@/components/applications/StreamingCoverLetter";
@@ -18,11 +19,13 @@ interface CoverLetterSectionProps {
 }
 
 export function CoverLetterSection({ application }: CoverLetterSectionProps) {
+  const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedParagraphs, setGeneratedParagraphs] = useState<
     string[] | null
   >(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const hasFitAnalysis = !!application.fitAnalysis;
   const existingParagraphs =
@@ -35,6 +38,7 @@ export function CoverLetterSection({ application }: CoverLetterSectionProps) {
   const handleGenerate = () => {
     setIsGenerating(true);
     setGeneratedParagraphs(null);
+    setSaveError(null);
   };
 
   const handleComplete = (paragraphs: string[]) => {
@@ -56,13 +60,16 @@ export function CoverLetterSection({ application }: CoverLetterSectionProps) {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to save");
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || "Failed to save");
       }
 
       setGeneratedParagraphs(null);
-      window.location.reload();
-    } catch {
-      alert("Failed to save. Please try again.");
+      setIsGenerating(false);
+      setSaveError(null);
+      router.refresh();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Failed to save");
     } finally {
       setIsSaving(false);
     }
@@ -91,10 +98,17 @@ export function CoverLetterSection({ application }: CoverLetterSectionProps) {
             autoStart
           />
           {canSave && (
-            <div className="flex justify-end">
-              <Button onClick={handleSave} disabled={isSaving} size="sm">
-                {isSaving ? "Saving..." : "Save to Application"}
-              </Button>
+            <div className="space-y-2">
+              {saveError && (
+                <p className="text-sm text-destructive" role="alert">
+                  {saveError}
+                </p>
+              )}
+              <div className="flex justify-end">
+                <Button onClick={handleSave} disabled={isSaving} size="sm">
+                  {isSaving ? "Saving..." : "Save to Application"}
+                </Button>
+              </div>
             </div>
           )}
         </div>
@@ -102,10 +116,17 @@ export function CoverLetterSection({ application }: CoverLetterSectionProps) {
         <div className="space-y-4">
           <CoverLetter paragraphs={displayParagraphs} />
           {canSave && (
-            <div className="flex justify-end">
-              <Button onClick={handleSave} disabled={isSaving} size="sm">
-                {isSaving ? "Saving..." : "Save to Application"}
-              </Button>
+            <div className="space-y-2">
+              {saveError && (
+                <p className="text-sm text-destructive" role="alert">
+                  {saveError}
+                </p>
+              )}
+              <div className="flex justify-end">
+                <Button onClick={handleSave} disabled={isSaving} size="sm">
+                  {isSaving ? "Saving..." : "Save to Application"}
+                </Button>
+              </div>
             </div>
           )}
         </div>
