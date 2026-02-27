@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@resonance/ui/components/card";
-import { Skeleton } from "@resonance/ui/components/skeleton";
+import { Button } from "@resonance/ui/components/button";
 
 type Preferences = UserPreferences;
 
@@ -26,11 +26,16 @@ export function SettingsClient({ initialPreferences }: SettingsClientProps) {
 
   if (!preferences) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
-      </div>
+      <Card>
+        <CardContent className="flex flex-col items-start gap-4 py-8">
+          <p className="text-sm text-muted-foreground">
+            We couldn't load your preferences right now. Please try again.
+          </p>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
