@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@resonance/ui/components/button";
 import { Input } from "@resonance/ui/components/input";
+import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
 
 export default function LoginPage() {
   return (
@@ -46,6 +47,10 @@ function LoginPageContent() {
 
     router.push(callbackUrl);
     router.refresh();
+  }
+
+  async function handleOAuthSignIn(provider: string) {
+    await signIn(provider, { redirectTo: callbackUrl });
   }
 
   return (
@@ -159,6 +164,11 @@ function LoginPageContent() {
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
+
+          <SocialLoginButtons
+            onGoogleClick={() => handleOAuthSignIn("google")}
+            onLinkedInClick={() => handleOAuthSignIn("linkedin")}
+          />
 
           {/* Footer link */}
           <p className="mt-6 text-center text-sm text-muted-foreground">
