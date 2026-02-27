@@ -126,27 +126,47 @@ export function ResumeUpload({ onUploaded }: { onUploaded?: () => void }) {
     setLoading(true);
     setError(null);
 
-    try {
-      for (const exp of parsedExperiences) {
-        const res = await fetch("/api/experiences", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(exp),
-        });
+    const failures: string[] = [];
+    let savedCount = 0;
 
-        if (!res.ok) {
-          const errorMessage = await getResponseErrorMessage(
-            res,
-            "Failed to save experience",
-          );
-          setError(errorMessage);
-          return;
+    try {
+      for (let i = 0; i < parsedExperiences.length; i++) {
+        const exp = parsedExperiences[i];
+        try {
+          const res = await fetch("/api/experiences", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(exp),
+          });
+
+          if (!res.ok) {
+            const errorMessage = await getResponseErrorMessage(
+              res,
+              "Failed to save experience",
+            );
+            failures.push(`Experience ${i + 1}: ${errorMessage}`);
+          } else {
+            savedCount++;
+          }
+        } catch {
+          failures.push(`Experience ${i + 1}: network error`);
         }
       }
 
-      setOpen(false);
-      setParsedExperiences([]);
-      onUploaded?.();
+      if (failures.length > 0) {
+        setError(
+          `Saved ${savedCount}/${parsedExperiences.length}. Failed: ${failures.join("; ")}`,
+        );
+      }
+
+      if (savedCount > 0) {
+        onUploaded?.();
+      }
+
+      if (failures.length === 0) {
+        setOpen(false);
+        setParsedExperiences([]);
+      }
     } catch {
       setError("Network error — please try again");
     } finally {
