@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 interface StreamingCoverLetterProps {
   applicationId: string;
   onComplete?: (paragraphs: string[]) => void;
+  autoStart?: boolean;
 }
 
 interface SseMessage {
@@ -17,6 +18,7 @@ interface SseMessage {
 export function StreamingCoverLetter({
   applicationId,
   onComplete,
+  autoStart = false,
 }: StreamingCoverLetterProps) {
   const [paragraphs, setParagraphs] = useState<string[]>([]);
   const [isComplete, setIsComplete] = useState(false);
@@ -24,6 +26,8 @@ export function StreamingCoverLetter({
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<string>("");
   const abortRef = useRef<AbortController | null>(null);
+  const isLoadingRef = useRef(false);
+  const hasAutoStartedRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -32,8 +36,9 @@ export function StreamingCoverLetter({
   }, []);
 
   const startGeneration = useCallback(async () => {
-    if (isLoading) return;
+    if (isLoadingRef.current) return;
 
+    isLoadingRef.current = true;
     setIsLoading(true);
     setError(null);
     setParagraphs([]);
@@ -106,9 +111,17 @@ export function StreamingCoverLetter({
       }
     } finally {
       setIsLoading(false);
+      isLoadingRef.current = false;
       abortRef.current = null;
     }
-  }, [applicationId, isLoading, onComplete]);
+  }, [applicationId, onComplete]);
+
+  useEffect(() => {
+    if (autoStart && !hasAutoStartedRef.current) {
+      hasAutoStartedRef.current = true;
+      void startGeneration();
+    }
+  }, [autoStart, startGeneration]);
 
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);

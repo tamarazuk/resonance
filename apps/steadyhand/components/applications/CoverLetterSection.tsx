@@ -88,6 +88,7 @@ export function CoverLetterSection({ application }: CoverLetterSectionProps) {
         <StreamingCoverLetter
           applicationId={application.id}
           onComplete={handleComplete}
+          autoStart
         />
       ) : displayParagraphs.length > 0 ? (
         <div className="space-y-4">
