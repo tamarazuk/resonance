@@ -19,6 +19,23 @@ interface ParsedExperience {
   action?: string;
   result?: string;
   skills: string[];
+  id?: string;
+  uuid?: string;
+}
+
+function getExperienceKey(exp: ParsedExperience): string {
+  return (
+    exp.id ??
+    exp.uuid ??
+    [
+      exp.rawInput,
+      exp.situation ?? "",
+      exp.task ?? "",
+      exp.action ?? "",
+      exp.result ?? "",
+      exp.skills.join(","),
+    ].join("|")
+  );
 }
 
 async function getResponseErrorMessage(
@@ -170,9 +187,9 @@ export function ResumeUpload({ onUploaded }: { onUploaded?: () => void }) {
           <div className="flex flex-col gap-4 py-4">
             {error && <p className="text-sm text-destructive">{error}</p>}
 
-            {parsedExperiences.map((exp, i) => (
+            {parsedExperiences.map((exp) => (
               <div
-                key={i}
+                key={getExperienceKey(exp)}
                 className="rounded-lg border border-border bg-card p-4"
               >
                 <p className="font-medium text-foreground">{exp.rawInput}</p>

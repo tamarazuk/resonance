@@ -178,9 +178,15 @@ export async function POST(req: Request) {
       );
     }
 
+    const jsonContent = content
+      .trim()
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/, "")
+      .trim();
+
     let parsed: unknown;
     try {
-      parsed = JSON.parse(content);
+      parsed = JSON.parse(jsonContent);
     } catch {
       return NextResponse.json(
         { error: "Failed to parse resume - invalid JSON response" },
