@@ -35,7 +35,7 @@ export function createMockChatCompletion(
   return {
     id: `chatcmpl-${Math.random().toString(36).substring(7)}`,
     object: "chat.completion",
-    created: Date.now(),
+    created: Math.floor(Date.now() / 1000),
     model,
     choices: [
       {
