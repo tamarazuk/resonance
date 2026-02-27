@@ -5,6 +5,7 @@ import {
   applications,
   eq,
   and,
+  or,
   desc,
   lt,
   asc,
@@ -14,8 +15,12 @@ import type { TriageAction } from "@resonance/types";
 import { auth } from "@/lib/auth";
 import { subDays } from "date-fns";
 
+const MANUAL_ENTRY_LABEL = "Manual Entry";
+
+const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
 function getCompanyName(url: string): string {
-  if (url === "Manual Entry") return "your manual entry";
+  if (url === MANUAL_ENTRY_LABEL) return "your manual entry";
   try {
     const hostname = new URL(url).hostname.replace("www.", "");
     return hostname;
@@ -49,10 +54,12 @@ export async function GET() {
     .where(
       and(
         eq(experiences.userId, userId),
-        isNull(experiences.situation),
-        isNull(experiences.task),
-        isNull(experiences.action),
-        isNull(experiences.result),
+        or(
+          isNull(experiences.situation),
+          isNull(experiences.task),
+          isNull(experiences.action),
+          isNull(experiences.result),
+        ),
       ),
     )
     .orderBy(desc(experiences.createdAt))
@@ -93,7 +100,7 @@ export async function GET() {
       title: `Submit application to ${company}`,
       description: `Your tailored materials for ${title} are ready. Submit when ready.`,
       priority: "high",
-      type: "complete_analysis",
+      type: "submit",
       href: `/dashboard/applications/${app.id}`,
     });
   }
@@ -127,7 +134,6 @@ export async function GET() {
   }
 
   actions.sort((a, b) => {
-    const priorityOrder = { high: 0, medium: 1, low: 2 };
     return priorityOrder[a.priority] - priorityOrder[b.priority];
   });
 

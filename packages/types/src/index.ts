@@ -248,6 +248,7 @@ export type TriageActionType =
   | "review_story"
   | "follow_up"
   | "complete_analysis"
+  | "submit"
   | "general";
 
 export type TriageActionPriority = "high" | "medium" | "low";

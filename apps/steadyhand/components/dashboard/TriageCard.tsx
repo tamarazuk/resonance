@@ -28,6 +28,7 @@ const typeLabels: Record<TriageAction["type"], string> = {
   review_story: "Review",
   follow_up: "Follow Up",
   complete_analysis: "Analysis",
+  submit: "Submit",
   general: "Action",
 };
 
