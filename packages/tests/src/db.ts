@@ -63,8 +63,9 @@ export type MockTransactionFn<T> = (
 
 export async function createMockTransaction<T>(
   callback: MockTransactionFn<T>,
+  options: MockDbOptions = {},
 ): Promise<T> {
-  const mockTx = createMockDb();
+  const mockTx = createMockDb(options);
   return callback(mockTx);
 }
 
