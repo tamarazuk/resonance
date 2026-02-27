@@ -21,6 +21,23 @@ interface ParsedExperience {
   skills: string[];
 }
 
+async function getResponseErrorMessage(
+  response: Response,
+  fallbackMessage: string,
+): Promise<string> {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    return fallbackMessage;
+  }
+
+  try {
+    const data = (await response.json()) as { error?: unknown };
+    return typeof data.error === "string" ? data.error : fallbackMessage;
+  } catch {
+    return fallbackMessage;
+  }
+}
+
 export function ResumeUpload({ onUploaded }: { onUploaded?: () => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -65,8 +82,11 @@ export function ResumeUpload({ onUploaded }: { onUploaded?: () => void }) {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? "Failed to parse resume");
+        const errorMessage = await getResponseErrorMessage(
+          res,
+          "Failed to parse resume",
+        );
+        setError(errorMessage);
         return;
       }
 
