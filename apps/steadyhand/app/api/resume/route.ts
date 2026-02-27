@@ -34,6 +34,22 @@ const ExperienceSchema = z.object({
 
 const ExperiencesResponseSchema = z.array(ExperienceSchema);
 const LLM_TIMEOUT_MS = 30_000;
+const PDF_SIGNATURE = "%PDF";
+const ZIP_SIGNATURE = Buffer.from([0x50, 0x4b, 0x03, 0x04]);
+
+function hasPdfSignature(buffer: Buffer): boolean {
+  return (
+    buffer.length >= PDF_SIGNATURE.length &&
+    buffer.subarray(0, PDF_SIGNATURE.length).toString("ascii") === PDF_SIGNATURE
+  );
+}
+
+function hasZipSignature(buffer: Buffer): boolean {
+  return (
+    buffer.length >= ZIP_SIGNATURE.length &&
+    buffer.subarray(0, 4).equals(ZIP_SIGNATURE)
+  );
+}
 
 async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   try {
@@ -114,6 +130,19 @@ export async function POST(req: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    if (file.type === "application/pdf" && !hasPdfSignature(buffer)) {
+      return NextResponse.json({ error: "Invalid PDF file" }, { status: 400 });
+    }
+
+    if (
+      file.type ===
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" &&
+      !hasZipSignature(buffer)
+    ) {
+      return NextResponse.json({ error: "Invalid DOCX file" }, { status: 400 });
+    }
+
     let resumeText: string;
 
     if (file.type === "application/pdf") {
