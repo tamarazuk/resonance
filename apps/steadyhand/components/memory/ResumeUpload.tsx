@@ -108,9 +108,14 @@ export function ResumeUpload({ onUploaded }: { onUploaded?: () => void }) {
       }
 
       const data = await res.json();
-      setParsedExperiences(data.experiences);
-      if (data.experiences.length > 0) {
+      const experiences: ParsedExperience[] = Array.isArray(data.experiences)
+        ? data.experiences
+        : [];
+      setParsedExperiences(experiences);
+      if (experiences.length > 0) {
         setOpen(true);
+      } else {
+        setError("No experiences found in resume.");
       }
     } catch {
       setError("Network error — please try again");
