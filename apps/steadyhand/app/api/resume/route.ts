@@ -151,7 +151,15 @@ export async function POST(req: Request) {
       );
     }
 
-    const experiences = ExperiencesResponseSchema.parse(parsed);
+    const validation = ExperiencesResponseSchema.safeParse(parsed);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: "Failed to parse resume - invalid experience format" },
+        { status: 400 },
+      );
+    }
+
+    const experiences = validation.data;
 
     return NextResponse.json({ experiences });
   } catch (error) {
