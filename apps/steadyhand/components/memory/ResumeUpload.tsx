@@ -34,6 +34,24 @@ export function ResumeUpload({ onUploaded }: { onUploaded?: () => void }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const allowedTypes = [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+    if (!allowedTypes.includes(file.type)) {
+      setError("Only PDF and DOCX files are allowed");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      setError("File too large. Maximum size is 10MB.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
     setLoading(true);
     setError(null);
 

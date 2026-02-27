@@ -42,9 +42,18 @@ async function extractTextFromPDF(buffer: Buffer): Promise<string> {
 }
 
 async function extractTextFromDOCX(buffer: Buffer): Promise<string> {
-  const mammoth = await import("mammoth");
-  const result = await mammoth.extractRawText({ buffer });
-  return result.value;
+  try {
+    const mammoth = await import("mammoth");
+    const result = await mammoth.extractRawText({ buffer });
+    if (result.errors && result.errors.length > 0) {
+      console.warn("Mammoth extraction warnings:", result.errors);
+    }
+    return result.value;
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Failed to extract text from DOCX: ${errorMessage}`);
+  }
 }
 
 export async function POST(req: Request) {
@@ -99,7 +108,7 @@ export async function POST(req: Request) {
 
     const userPrompt = EXTRACT_EXPERIENCES_USER_PROMPT.replace(
       "{resumeText}",
-      resumeText,
+      resumeText.replace(/---RESUME_START---|---RESUME_END---/g, ""),
     );
 
     const { text: content } = await generateText({
@@ -130,7 +139,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ experiences });
   } catch (error) {
-    console.error("Resume parsing error:", error);
+    const errorName = error instanceof Error ? error.name : "UnknownError";
+    console.error("Resume parsing error", { errorName });
     return NextResponse.json(
       { error: "Failed to parse resume" },
       { status: 500 },
