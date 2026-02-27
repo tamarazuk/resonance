@@ -35,10 +35,16 @@ const ExperienceSchema = z.object({
 const ExperiencesResponseSchema = z.array(ExperienceSchema);
 
 async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  // @ts-expect-error pdf-parse ESM types are incomplete
-  const pdfParse = (await import("pdf-parse")).default;
-  const data = await pdfParse(buffer);
-  return data.text;
+  try {
+    // @ts-expect-error pdf-parse ESM types are incomplete
+    const pdfParse = (await import("pdf-parse")).default;
+    const data = await pdfParse(buffer);
+    return data.text;
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Failed to extract text from PDF: ${errorMessage}`);
+  }
 }
 
 async function extractTextFromDOCX(buffer: Buffer): Promise<string> {
