@@ -103,7 +103,7 @@ When triaging, consider:
 
 1. Make the code change in the relevant file(s).
 2. Commit with a message that references the review. Follow conventional commits:
-   ```
+   ```text
    fix(scope): address review — brief description
    ```
 3. Note the commit SHA from the output of `git commit`.
