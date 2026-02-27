@@ -30,12 +30,21 @@ export function ExperienceForm({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   onSaved,
+  onSaveError,
   trigger,
 }: {
   experience?: Experience;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  onSaved?: () => void;
+  onSaved?: (
+    experience: Experience,
+    meta?: {
+      mode: "create" | "update";
+      optimistic?: boolean;
+      tempId?: string;
+    },
+  ) => void;
+  onSaveError?: (meta: { mode: "create" | "update"; tempId?: string }) => void;
   trigger?: React.ReactElement;
 }) {
   const isEditing = !!experience;
@@ -89,6 +98,7 @@ export function ExperienceForm({
     e.preventDefault();
     setError(null);
     setLoading(true);
+    let optimisticTempId: string | undefined;
 
     try {
       const skillsList = skills
@@ -120,6 +130,44 @@ export function ExperienceForm({
             skills: skillsList,
           };
 
+      const mode = experience ? "update" : "create";
+      const tempId =
+        mode === "create" ? `temp-${crypto.randomUUID()}` : undefined;
+      optimisticTempId = tempId;
+
+      if (mode === "create" && tempId) {
+        const trimmedSituation = situation.trim();
+        const trimmedTask = task.trim();
+        const trimmedAction = action.trim();
+        const trimmedResult = result.trim();
+        const hasAnyStarField =
+          trimmedSituation.length > 0 ||
+          trimmedTask.length > 0 ||
+          trimmedAction.length > 0 ||
+          trimmedResult.length > 0;
+
+        onSaved?.(
+          {
+            id: tempId,
+            userId: "optimistic",
+            rawInput,
+            starStructure: hasAnyStarField
+              ? {
+                  situation: trimmedSituation,
+                  task: trimmedTask,
+                  action: trimmedAction,
+                  result: trimmedResult,
+                }
+              : null,
+            skills: skillsList,
+            embedding: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          { mode, optimistic: true, tempId },
+        );
+      }
+
       const res = await fetch(url, {
         method: experience ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -129,16 +177,23 @@ export function ExperienceForm({
       if (!res.ok) {
         const data = await res.json();
         const message = data.error ?? "Failed to save experience";
+        onSaveError?.({ mode, tempId });
         setError(message);
         toast.error(message);
         return;
       }
 
+      const savedExperience = (await res.json()) as Experience;
+
       setOpen(false);
       toast.success("Experience saved to Memory Bank");
-      onSaved?.();
+      onSaved?.(savedExperience, { mode, tempId });
     } catch (error) {
       const message = "Network error — please try again";
+      onSaveError?.({
+        mode: experience ? "update" : "create",
+        tempId: optimisticTempId,
+      });
       setError(message);
       toast.error(message);
       console.error("Save experience error:", error);
