@@ -9,10 +9,11 @@ interface StreamingCoverLetterProps {
 }
 
 interface SseMessage {
-  type: "text" | "finish";
+  type: "text" | "finish" | "error";
   value?: string;
   accumulated?: string;
   paragraphs?: string[];
+  message?: string;
 }
 
 export function StreamingCoverLetter({
@@ -98,6 +99,10 @@ export function StreamingCoverLetter({
                   setParagraphs(data.paragraphs);
                   onComplete?.(data.paragraphs);
                 }
+              } else if (data.type === "error") {
+                throw new Error(
+                  data.message || "Failed to generate cover letter",
+                );
               }
             } catch {
               // Ignore parse errors for incomplete messages
