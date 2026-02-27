@@ -6,13 +6,22 @@ export interface MockDbOptions {
 
 export function createMockDb(options: MockDbOptions = {}) {
   const { users = [], experiences = [], applications = [] } = options;
+  const tableMap: Record<string, Record<string, unknown>[]> = {
+    users,
+    experiences,
+    applications,
+  };
 
   return {
     select: () => ({
-      from: () => ({
-        where: async () => users,
-        orderBy: async () => users,
-      }),
+      from: (table?: string) => {
+        const rows = table ? (tableMap[table] ?? users) : users;
+
+        return {
+          where: async () => rows,
+          orderBy: async () => rows,
+        };
+      },
     }),
     insert: () => ({
       values: async () => [{ id: "mock-id" }],
