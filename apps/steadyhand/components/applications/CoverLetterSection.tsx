@@ -83,7 +83,7 @@ export function CoverLetterSection({ application }: CoverLetterSectionProps) {
         <h3 className="text-base font-semibold text-foreground">
           Cover Letter
         </h3>
-        {canGenerate && (
+        {canGenerate && displayParagraphs.length > 0 && (
           <Button onClick={handleGenerate} size="sm">
             Generate Draft
           </Button>
