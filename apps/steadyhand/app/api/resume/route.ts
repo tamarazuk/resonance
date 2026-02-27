@@ -151,9 +151,12 @@ export async function POST(req: Request) {
       resumeText = await extractTextFromDOCX(buffer);
     }
 
-    if (!resumeText || resumeText.trim().length < 50) {
+    if (!resumeText || resumeText.trim().length < 200) {
       return NextResponse.json(
-        { error: "Could not extract text from file" },
+        {
+          error:
+            "Could not extract enough text from file. The resume may be image-based or corrupted.",
+        },
         { status: 400 },
       );
     }
