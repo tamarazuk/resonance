@@ -21,8 +21,8 @@ When asked to use a skill (e.g., address-pr-comments, pick-work, ship-work), **r
 
 ## Worktree Workflow Notes (Learned)
 
-- In `.codex/worktrees/*`, verify branch state first; worktrees may start in detached `HEAD`.
-- Use semantic branches with issue linkage: `codex/feat/issue-<number>-<slug>` or `codex/fix/issue-<number>-<slug>`.
+- In a worktree, verify branch state first; worktrees may start in detached `HEAD`.
+- Use semantic branches with issue linkage: `feat/issue-<number>-<slug>` or `fix/issue-<number>-<slug>`.
 - If `gh auth status` fails in sandbox but was recently authenticated, rerun `gh` commands with escalated permissions to access keychain/network.
 - Use `gh project item-list 2 --owner @me --format json` to read the board and pull the linked GitHub Issue number when available.
 - Include the issue number in branch and PR:
