@@ -128,11 +128,21 @@ export const signupSchema = z.object({
   fullName: z.string().min(2, "Name must be at least 2 characters").optional(),
 });
 
-export const updatePreferencesSchema = z.object({
-  consentAnalytics: z.boolean().optional(),
-  consentAiTraining: z.boolean().optional(),
-  consentMarketing: z.boolean().optional(),
-});
+export const updatePreferencesSchema = z
+  .object({
+    consentAnalytics: z.boolean().optional(),
+    consentAiTraining: z.boolean().optional(),
+    consentMarketing: z.boolean().optional(),
+  })
+  .refine(
+    (data) =>
+      data.consentAnalytics !== undefined ||
+      data.consentAiTraining !== undefined ||
+      data.consentMarketing !== undefined,
+    {
+      message: "At least one preference field must be provided",
+    },
+  );
 
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
