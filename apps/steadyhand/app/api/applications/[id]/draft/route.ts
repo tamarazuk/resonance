@@ -43,7 +43,7 @@ export async function POST(req: Request, { params }: RouteParams) {
   }
 
   // If only saving existing cover letter paragraphs (no regeneration needed)
-  if (body.coverLetterParagraphs && application.parsedJD) {
+  if (body.coverLetterParagraphs !== undefined) {
     if (
       !Array.isArray(body.coverLetterParagraphs) ||
       !body.coverLetterParagraphs.every((p) => typeof p === "string")
