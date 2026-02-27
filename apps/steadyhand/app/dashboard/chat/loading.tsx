@@ -49,7 +49,7 @@ export default function DashboardChatLoading() {
         </div>
       </div>
 
-      <div className="flex w-full flex-col lg:w-2/5">
+      <div className="flex w-full flex-col bg-secondary lg:w-2/5">
         <div className="flex items-center justify-between px-8 py-6">
           <Skeleton className="h-6 w-28" />
           <Skeleton className="h-5 w-20" />

@@ -7,6 +7,16 @@ import { ExperienceCard } from "@/components/memory/ExperienceCard";
 import { ExperienceForm } from "@/components/memory/ExperienceForm";
 import { ResumeUpload } from "@/components/memory/ResumeUpload";
 import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@resonance/ui/components/alert-dialog";
+import { Button } from "@resonance/ui/components/button";
+import {
   EmptyState,
   EmptyStateIcon,
   EmptyStateTitle,
@@ -25,6 +35,15 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("All");
 
+  // Edit/delete state
+  const [editingExperience, setEditingExperience] = useState<Experience | null>(
+    null,
+  );
+  const [deletingExperience, setDeletingExperience] =
+    useState<Experience | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const fetchExperiences = useCallback(async () => {
     try {
       const res = await fetch("/api/experiences");
@@ -42,6 +61,27 @@ export default function ChatPage() {
   useEffect(() => {
     fetchExperiences();
   }, [fetchExperiences]);
+
+  async function handleDelete() {
+    if (!deletingExperience) return;
+    setDeleteLoading(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/experiences/${deletingExperience.id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setDeletingExperience(null);
+        fetchExperiences();
+      } else {
+        setDeleteError("Failed to delete experience. Please try again.");
+      }
+    } catch {
+      setDeleteError("Network error — please try again.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
 
   // Filter tabs — "All" plus unique categories extracted from experiences
   const filterTabs = ["All", "Leadership", "Technical", "Conflict"];
@@ -134,7 +174,12 @@ export default function ChatPage() {
             </div>
           ) : (
             experiences.map((exp) => (
-              <ExperienceCard key={exp.id} experience={exp} />
+              <ExperienceCard
+                key={exp.id}
+                experience={exp}
+                onEdit={setEditingExperience}
+                onDelete={setDeletingExperience}
+              />
             ))
           )}
         </div>
@@ -154,6 +199,58 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit experience dialog (controlled) */}
+      {editingExperience && (
+        <ExperienceForm
+          experience={editingExperience}
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) setEditingExperience(null);
+          }}
+          onSaved={() => {
+            setEditingExperience(null);
+            fetchExperiences();
+          }}
+        />
+      )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog
+        open={!!deletingExperience}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeletingExperience(null);
+            setDeleteError(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Experience</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this experience from your Memory
+              Bank. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteError && (
+            <p className="text-sm text-destructive">{deleteError}</p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLoading}>
+              Cancel
+            </AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteLoading}
+            >
+              {deleteLoading ? "Deleting..." : "Delete"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { Experience } from "@resonance/types";
+import { toast } from "sonner";
 import { Button } from "@resonance/ui/components/button";
 import { Input } from "@resonance/ui/components/input";
 import { Textarea } from "@resonance/ui/components/textarea";
@@ -15,22 +17,34 @@ import {
 } from "@resonance/ui/components/dialog";
 
 /**
- * Traditional STAR data-entry form — used inside a "Manual Entry" dialog.
+ * STAR data-entry form — supports both create and edit modes.
  *
- * Not rendered as a standalone page. This is the accessibility/speed fallback
- * for users who prefer direct form input over chat-based entry.
+ * Create mode: Pass `trigger` to render a dialog trigger button.
+ * Edit mode: Pass `experience` + `open`/`onOpenChange` for controlled dialog.
  *
- * On submit, POSTs to the experiences API and calls `onSaved` so the parent
- * can refresh the Memory Bank.
+ * On submit, POSTs (create) or PUTs (edit) to the experiences API and calls
+ * `onSaved` so the parent can refresh the Memory Bank.
  */
 export function ExperienceForm({
+  experience,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
   onSaved,
   trigger,
 }: {
+  experience?: Experience;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onSaved?: () => void;
-  trigger: React.ReactNode;
+  trigger?: React.ReactElement;
 }) {
-  const [open, setOpen] = useState(false);
+  const isEditing = !!experience;
+
+  // Support both controlled (edit) and uncontrolled (create) dialog state
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = controlledOnOpenChange ?? setInternalOpen;
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +54,19 @@ export function ExperienceForm({
   const [action, setAction] = useState("");
   const [result, setResult] = useState("");
   const [skills, setSkills] = useState("");
+
+  // Pre-fill form fields when editing or when experience changes
+  useEffect(() => {
+    if (experience && open) {
+      setRawInput(experience.rawInput);
+      setSituation(experience.starStructure?.situation ?? "");
+      setTask(experience.starStructure?.task ?? "");
+      setAction(experience.starStructure?.action ?? "");
+      setResult(experience.starStructure?.result ?? "");
+      setSkills(experience.skills.join(", "));
+      setError(null);
+    }
+  }, [experience, open]);
 
   function resetForm() {
     setRawInput("");
@@ -51,53 +78,88 @@ export function ExperienceForm({
     setError(null);
   }
 
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      resetForm();
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      const res = await fetch("/api/experiences", {
-        method: "POST",
+      const skillsList = skills
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      const url = experience
+        ? `/api/experiences/${experience.id}`
+        : "/api/experiences";
+
+      const body = experience
+        ? {
+            rawInput,
+            starStructure: {
+              situation: situation || "",
+              task: task || "",
+              action: action || "",
+              result: result || "",
+            },
+            skills: skillsList,
+          }
+        : {
+            rawInput,
+            situation: situation || undefined,
+            task: task || undefined,
+            action: action || undefined,
+            result: result || undefined,
+            skills: skillsList,
+          };
+
+      const res = await fetch(url, {
+        method: experience ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rawInput,
-          situation: situation || undefined,
-          task: task || undefined,
-          action: action || undefined,
-          result: result || undefined,
-          skills: skills
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean),
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error ?? "Failed to save experience");
+        const message = data.error ?? "Failed to save experience";
+        setError(message);
+        toast.error(message);
         return;
       }
 
-      resetForm();
       setOpen(false);
+      toast.success("Experience saved to Memory Bank");
       onSaved?.();
-    } catch {
-      setError("Network error — please try again");
+    } catch (error) {
+      const message = "Network error — please try again";
+      setError(message);
+      toast.error(message);
+      console.error("Save experience error:", error);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={trigger as React.JSX.Element} />
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {trigger && <DialogTrigger render={trigger} />}
       <DialogContent className="sm:max-w-lg">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Manual Experience Entry</DialogTitle>
+            <DialogTitle>
+              {isEditing ? "Edit Experience" : "Manual Experience Entry"}
+            </DialogTitle>
             <DialogDescription>
-              Add a professional experience directly using the STAR format.
+              {isEditing
+                ? "Update the STAR fields for this experience."
+                : "Add a professional experience directly using the STAR format."}
             </DialogDescription>
           </DialogHeader>
 
@@ -161,7 +223,11 @@ export function ExperienceForm({
 
           <DialogFooter>
             <Button type="submit" disabled={loading}>
-              {loading ? "Saving..." : "Save Experience"}
+              {loading
+                ? "Saving..."
+                : isEditing
+                  ? "Update Experience"
+                  : "Save Experience"}
             </Button>
           </DialogFooter>
         </form>

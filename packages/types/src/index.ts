@@ -128,6 +128,19 @@ export const createExperienceSchema = z.object({
   rawInput: z
     .string()
     .min(10, "Experience description must be at least 10 characters"),
+  starStructure: z
+    .object({
+      situation: z.string(),
+      task: z.string(),
+      action: z.string(),
+      result: z.string(),
+    })
+    .optional(),
+  situation: z.string().optional(),
+  task: z.string().optional(),
+  action: z.string().optional(),
+  result: z.string().optional(),
+  skills: z.array(z.string()).optional(),
 });
 
 export const updateExperienceSchema = z.object({
