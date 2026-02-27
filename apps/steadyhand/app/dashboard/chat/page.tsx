@@ -5,6 +5,7 @@ import type { Experience } from "@resonance/types";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { ExperienceCard } from "@/components/memory/ExperienceCard";
 import { ExperienceForm } from "@/components/memory/ExperienceForm";
+import { ResumeUpload } from "@/components/memory/ResumeUpload";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -121,15 +122,18 @@ export default function ChatPage() {
           <h2 className="text-base font-semibold tracking-tight text-foreground">
             Memory Bank
           </h2>
-          <ExperienceForm
-            onSaved={fetchExperiences}
-            trigger={
-              <button className="flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80">
-                <PlusIcon className="h-4.5 w-4.5" />
-                New Entry
-              </button>
-            }
-          />
+          <div className="flex items-center gap-3">
+            <ResumeUpload onUploaded={fetchExperiences} />
+            <ExperienceForm
+              onSaved={fetchExperiences}
+              trigger={
+                <button className="flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80">
+                  <PlusIcon className="h-4.5 w-4.5" />
+                  New Entry
+                </button>
+              }
+            />
+          </div>
         </div>
 
         {/* Filter tabs */}
