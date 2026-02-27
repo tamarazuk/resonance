@@ -51,11 +51,27 @@ export function SettingsClient({ initialPreferences }: SettingsClientProps) {
       });
 
       if (!res.ok) {
-        const data = await res.json();
         setPreferences((prev) =>
           prev ? { ...prev, [key]: currentValue } : null,
         );
-        setError(data.error || "Failed to save preference");
+
+        let errorMessage = "Failed to save preference";
+        try {
+          const data: unknown = await res.json();
+          if (
+            data &&
+            typeof data === "object" &&
+            "error" in data &&
+            typeof data.error === "string" &&
+            data.error.trim()
+          ) {
+            errorMessage = data.error;
+          }
+        } catch {
+          // Keep fallback error message when response isn't JSON.
+        }
+
+        setError(errorMessage);
       }
     } catch {
       setPreferences((prev) =>
