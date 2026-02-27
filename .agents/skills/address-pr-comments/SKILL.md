@@ -16,8 +16,8 @@ Autonomously address all unresolved review comments on the pull request associat
 
 **Do not just say "fixed" in a general PR comment.** You must reply to the **specific** GitHub comment that raised the issue.
 
-- For **inline review comments**: Use `in_reply_to=COMMENT_DATABASE_ID` to reply to that exact comment
-- For **general PR comments**: Reply to that specific comment
+- For **inline review comments** (review threads / pull request review comments): use `POST repos/{owner}/{repo}/pulls/{number}/comments` with `in_reply_to=COMMENT_DATABASE_ID`
+- For **general PR conversation comments** (`conversation_comments`): use `POST repos/{owner}/{repo}/issues/{number}/comments` to add a top-level PR comment that references the original comment URL
 - Each reply must include the commit SHA if fixed, or the reason if skipped
 
 Failure to reply to the specific comment will leave the review thread unresolved and the user will have to manually track which comments were addressed.
@@ -80,6 +80,11 @@ If you did not use `--unresolved-only`, also filter out threads where `isResolve
 
 Also check `conversation_comments` and `reviews` for any actionable feedback not captured in review threads.
 
+Endpoint selection rules:
+
+- Use `pulls/{number}/comments` + `in_reply_to=<databaseId>` only for review-comment items (inline code review comments from `review_threads` / review comments in `reviews`).
+- Use `issues/{number}/comments` for general PR discussion comments from `conversation_comments` (these are top-level timeline comments and do not support `in_reply_to`).
+
 ### Step 3: Triage each comment
 
 For each actionable comment, read the comment body and the referenced file/line. Decide one of:
@@ -94,7 +99,7 @@ When triaging, consider:
 
 ### Step 4: Address each comment
 
-#### For fixes
+#### For fixes (review-thread comments)
 
 1. Make the code change in the relevant file(s).
 2. Commit with a message that references the review. Follow conventional commits:
@@ -119,7 +124,7 @@ When triaging, consider:
 
 Make **one commit per comment** so each GitHub reply can link to a specific SHA.
 
-#### For skips
+#### For skips (review-thread comments)
 
 **Reply to the SPECIFIC comment** using the `databaseId`:
 
@@ -130,6 +135,30 @@ gh api repos/OWNER/REPO/pulls/NUMBER/comments \
 ```
 
 Be respectful and specific. Reference the design decision, existing pattern, or trade-off that justifies the choice.
+
+#### For general PR conversation comments (`conversation_comments`)
+
+Use a top-level PR comment via the Issues API endpoint (PRs are issues in GitHub's API):
+
+```sh
+gh api repos/OWNER/REPO/issues/NUMBER/comments \
+  -f body="Addressing feedback from COMMENT_URL — Fixed in COMMIT_SHA: brief explanation."
+```
+
+For a skip, keep the same endpoint and replace the body with clear reasoning, for example:
+
+```sh
+gh api repos/OWNER/REPO/issues/NUMBER/comments \
+  -f body="Regarding COMMENT_URL — skipping this one: brief design rationale and trade-off."
+```
+
+**Replace:**
+
+- `OWNER` with the repo owner (e.g., `tamarazuk`)
+- `REPO` with the repo name (e.g., `resonance`)
+- `NUMBER` with the PR number
+- `COMMENT_URL` with the original conversation comment `url`/`html_url`
+- `COMMIT_SHA` with your commit hash when a fix was made
 
 ### Step 5: Summary
 
@@ -144,5 +173,6 @@ After all comments are addressed, present a summary to the user:
 ## Notes
 
 - If `gh` hits auth or rate-limit issues mid-run, prompt the user to re-authenticate with `gh auth login` and retry.
-- Use `databaseId` (not the GraphQL `id`) when replying to comments via the REST API's `in_reply_to` parameter.
+- Use `databaseId` (not the GraphQL `id`) when replying to review comments via the REST API's `in_reply_to` parameter.
+- Do not use `in_reply_to` for `conversation_comments`; post a top-level PR comment with `repos/{owner}/{repo}/issues/{number}/comments` and reference the original comment URL.
 - Always pull the latest from the remote before starting fixes to avoid conflicts: `git pull --rebase`.
