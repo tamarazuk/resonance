@@ -17,10 +17,10 @@
   "devDependencies": {
     "@resonance/eslint-config": "workspace:*",
     "@resonance/typescript-config": "workspace:*",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@resonance/types": "workspace:*",
-    "vitest": "^4.0.18"
+    "@resonance/types": "workspace:*"
   }
 }
