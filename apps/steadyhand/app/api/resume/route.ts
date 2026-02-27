@@ -7,14 +7,14 @@ import { auth } from "@/lib/auth";
 const EXTRACT_EXPERIENCES_SYSTEM_PROMPT = `You are an expert resume parser. Your task is to extract professional work experiences from resume text.
 
 For each experience, extract:
-- rawInput: A 2-4 sentence summary of the role/responsibility/achievement
+- rawInput: A 2-4 sentence summary of the role/responsibility/achievement, written in first person
 - situation: The context/background of the work
 - task: The challenge or objective
-- action: What you specifically did (use first person)
+- action: What you specifically did, written in first person (use "I"/"me"/"my" and convert any third-person or name-based descriptions into first-person)
 - result: Measurable outcomes and impact
 - skills: Technical and soft skills demonstrated
 
-Return a JSON array of experiences. Focus on substantive roles with clear accomplishments.`;
+Return a JSON array of experiences. Focus on substantive roles with clear accomplishments. Ensure that all descriptions are written from the candidate's first-person perspective, even if the original resume is written in third person.`;
 
 const EXTRACT_EXPERIENCES_USER_PROMPT = `Extract all professional work experiences from this resume text. Return a JSON array with the structure described above.
 
