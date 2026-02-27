@@ -1,5 +1,9 @@
 # Agent Rules
 
+## Using Skills
+
+When asked to use a skill (e.g., address-pr-comments, pick-work, ship-work), **read the skill's SKILL.md file first** to understand the correct workflow. Skills often have specific requirements that differ from default behavior.
+
 ## Branding
 
 - The correct brand name is **Steadyhand** (one word, lowercase "h"). Never use "SteadyHand", "Steady Hand", "steady hand", or any other variation.
