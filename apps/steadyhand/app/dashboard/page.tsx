@@ -9,8 +9,9 @@ import {
   EmptyStateAction,
 } from "@resonance/ui/components/empty-state";
 import Link from "next/link";
-import type { Application } from "@resonance/types";
+import type { Application, TriageAction } from "@resonance/types";
 import { ActiveApplicationsTable } from "@/components/dashboard/ActiveApplicationsTable";
+import { TriageCard } from "@/components/dashboard/TriageCard";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -33,8 +34,28 @@ async function getApplications(): Promise<Application[]> {
   }
 }
 
+async function getTriageActions(): Promise<TriageAction[]> {
+  try {
+    const cookieStore = await cookies();
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/triage`,
+      {
+        headers: { cookie: cookieStore.toString() },
+        cache: "no-store",
+      },
+    );
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
 export default async function DashboardPage() {
-  const applications = await getApplications();
+  const [applications, triageActions] = await Promise.all([
+    getApplications(),
+    getTriageActions(),
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-10 lg:px-10">
@@ -54,27 +75,35 @@ export default async function DashboardPage() {
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Action Items
           </h2>
-          <div className="rounded-xl border border-border bg-card p-1">
-            <EmptyState>
-              <EmptyStateIcon>
-                <CheckIcon className="size-10" />
-              </EmptyStateIcon>
-              <EmptyStateTitle>All caught up</EmptyStateTitle>
-              <EmptyStateDescription>
-                No pending action items. Start a conversation with the Career
-                Coach to build your experience bank.
-              </EmptyStateDescription>
-              <EmptyStateAction>
-                <Button
-                  nativeButton={false}
-                  render={<Link href="/dashboard/chat" />}
-                  className="rounded-full"
-                >
-                  Open Career Coach
-                </Button>
-              </EmptyStateAction>
-            </EmptyState>
-          </div>
+          {triageActions.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {triageActions.map((action) => (
+                <TriageCard key={action.id} action={action} />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-border bg-card p-1">
+              <EmptyState>
+                <EmptyStateIcon>
+                  <CheckIcon className="size-10" />
+                </EmptyStateIcon>
+                <EmptyStateTitle>All caught up</EmptyStateTitle>
+                <EmptyStateDescription>
+                  No pending action items. Start a conversation with the Career
+                  Coach to build your experience bank.
+                </EmptyStateDescription>
+                <EmptyStateAction>
+                  <Button
+                    nativeButton={false}
+                    render={<Link href="/dashboard/chat" />}
+                    className="rounded-full"
+                  >
+                    Open Career Coach
+                  </Button>
+                </EmptyStateAction>
+              </EmptyState>
+            </div>
+          )}
         </section>
 
         {/* Active applications */}

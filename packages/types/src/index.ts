@@ -241,3 +241,23 @@ export interface LLMResponse<T> {
   error?: string;
   tokensUsed?: number;
 }
+
+// ==================== Triage Types ====================
+
+export type TriageActionType =
+  | "review_story"
+  | "follow_up"
+  | "complete_analysis"
+  | "submit"
+  | "general";
+
+export type TriageActionPriority = "high" | "medium" | "low";
+
+export interface TriageAction {
+  id: string;
+  title: string;
+  description: string;
+  priority: TriageActionPriority;
+  type: TriageActionType;
+  href: string;
+}
