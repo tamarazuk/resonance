@@ -40,7 +40,7 @@ export function SettingsClient({ initialPreferences }: SettingsClientProps) {
   }
 
   async function handleToggle(key: keyof Preferences) {
-    if (!preferences) return;
+    if (!preferences || saving !== null) return;
     setError(null);
     const currentValue = preferences[key];
     const newValue = !currentValue;
@@ -108,21 +108,21 @@ export function SettingsClient({ initialPreferences }: SettingsClientProps) {
             title="Analytics"
             description="Allow anonymous usage data to help us improve the product."
             checked={preferences.consentAnalytics}
-            loading={saving === "consentAnalytics"}
+            loading={saving !== null}
             onChange={() => handleToggle("consentAnalytics")}
           />
           <ToggleItem
             title="AI Training"
             description="Contribute your experience data to improve Steadyhand's AI models. Your data is anonymized and you can opt out at any time."
             checked={preferences.consentAiTraining}
-            loading={saving === "consentAiTraining"}
+            loading={saving !== null}
             onChange={() => handleToggle("consentAiTraining")}
           />
           <ToggleItem
             title="Marketing Emails"
             description="Receive updates about new features, career tips, and product announcements."
             checked={preferences.consentMarketing}
-            loading={saving === "consentMarketing"}
+            loading={saving !== null}
             onChange={() => handleToggle("consentMarketing")}
           />
         </CardContent>
