@@ -33,6 +33,7 @@ const ExperienceSchema = z.object({
 });
 
 const ExperiencesResponseSchema = z.array(ExperienceSchema);
+const LLM_TIMEOUT_MS = 30_000;
 
 async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   try {
@@ -138,6 +139,7 @@ export async function POST(req: Request) {
       system: EXTRACT_EXPERIENCES_SYSTEM_PROMPT,
       prompt: userPrompt,
       temperature: 0.3,
+      abortSignal: AbortSignal.timeout(LLM_TIMEOUT_MS),
     });
 
     if (!content) {
@@ -169,6 +171,16 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ experiences });
   } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.name === "AbortError" || error.name === "TimeoutError")
+    ) {
+      return NextResponse.json(
+        { error: "Resume parsing timed out. Please try again." },
+        { status: 504 },
+      );
+    }
+
     const errorName = error instanceof Error ? error.name : "UnknownError";
     console.error("Resume parsing error", { errorName });
     return NextResponse.json(
