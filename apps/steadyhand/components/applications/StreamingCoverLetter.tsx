@@ -221,6 +221,7 @@ export function StreamingCoverLetter({
 
       {isComplete && (
         <button
+          type="button"
           onClick={startGeneration}
           className="rounded-full border border-border px-4 py-2 text-xs font-medium text-muted-foreground transition-all hover:border-primary/50 hover:text-primary"
         >
