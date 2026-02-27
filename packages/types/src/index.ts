@@ -8,8 +8,17 @@ export interface User {
   passwordHash: string;
   fullName: string | null;
   headline: string | null;
+  consentAnalytics: boolean;
+  consentAiTraining: boolean;
+  consentMarketing: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface UserPreferences {
+  consentAnalytics: boolean;
+  consentAiTraining: boolean;
+  consentMarketing: boolean;
 }
 
 export interface SessionUser {
@@ -119,6 +128,22 @@ export const signupSchema = z.object({
   fullName: z.string().min(2, "Name must be at least 2 characters").optional(),
 });
 
+export const updatePreferencesSchema = z
+  .object({
+    consentAnalytics: z.boolean().optional(),
+    consentAiTraining: z.boolean().optional(),
+    consentMarketing: z.boolean().optional(),
+  })
+  .refine(
+    (data) =>
+      data.consentAnalytics !== undefined ||
+      data.consentAiTraining !== undefined ||
+      data.consentMarketing !== undefined,
+    {
+      message: "At least one preference field must be provided",
+    },
+  );
+
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
@@ -128,6 +153,19 @@ export const createExperienceSchema = z.object({
   rawInput: z
     .string()
     .min(10, "Experience description must be at least 10 characters"),
+  starStructure: z
+    .object({
+      situation: z.string(),
+      task: z.string(),
+      action: z.string(),
+      result: z.string(),
+    })
+    .optional(),
+  situation: z.string().optional(),
+  task: z.string().optional(),
+  action: z.string().optional(),
+  result: z.string().optional(),
+  skills: z.array(z.string()).optional(),
 });
 
 export const updateExperienceSchema = z.object({

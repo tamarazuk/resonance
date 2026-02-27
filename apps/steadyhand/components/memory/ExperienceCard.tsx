@@ -4,9 +4,17 @@ import type { Experience } from "@resonance/types";
  * Memory Bank experience card — displayed in the sidebar.
  *
  * Richer layout matching Stitch design: status indicator, STAR fields
- * with left-border accent, category metadata, hover-reveal edit button.
+ * with left-border accent, category metadata, hover-reveal edit/delete buttons.
  */
-export function ExperienceCard({ experience }: { experience: Experience }) {
+export function ExperienceCard({
+  experience,
+  onEdit,
+  onDelete,
+}: {
+  experience: Experience;
+  onEdit?: (experience: Experience) => void;
+  onDelete?: (experience: Experience) => void;
+}) {
   const star = experience.starStructure;
   const hasAllStarFields =
     star?.situation && star?.task && star?.action && star?.result;
@@ -32,9 +40,24 @@ export function ExperienceCard({ experience }: { experience: Experience }) {
             </>
           )}
         </div>
-        <button className="text-muted-foreground/30 opacity-0 transition-all hover:text-primary group-hover:opacity-100">
-          <EditIcon className="h-4.5 w-4.5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            aria-label="Edit experience"
+            className="text-muted-foreground/30 opacity-0 transition-all hover:text-primary group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
+            onClick={() => onEdit?.(experience)}
+          >
+            <EditIcon className="h-4.5 w-4.5" />
+          </button>
+          <button
+            type="button"
+            aria-label="Delete experience"
+            className="text-muted-foreground/30 opacity-0 transition-all hover:text-destructive group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
+            onClick={() => onDelete?.(experience)}
+          >
+            <TrashIcon className="h-4.5 w-4.5" />
+          </button>
+        </div>
       </div>
 
       {/* Title */}
@@ -144,6 +167,27 @@ function EditIcon({ className }: { className?: string }) {
     >
       <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
       <path d="m15 5 4 4" />
+    </svg>
+  );
+}
+
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M3 6h18" />
+      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+      <line x1="10" x2="10" y1="11" y2="17" />
+      <line x1="14" x2="14" y1="11" y2="17" />
     </svg>
   );
 }

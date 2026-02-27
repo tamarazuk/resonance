@@ -108,13 +108,13 @@ export default async function DashboardPage() {
 
         {/* Active applications */}
         <section>
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Active Applications
             </h2>
             <Link
               href="/dashboard/applications/new"
-              className="flex h-9 items-center justify-center gap-1.5 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-all hover:opacity-90"
+              className="flex h-9 items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground transition-all hover:opacity-90 sm:px-5"
             >
               <PlusIcon className="size-4" />
               New Application

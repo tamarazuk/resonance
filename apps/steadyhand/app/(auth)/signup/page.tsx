@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@resonance/ui/components/button";
 import { Input } from "@resonance/ui/components/input";
@@ -14,15 +14,36 @@ import {
   CardContent,
   CardFooter,
 } from "@resonance/ui/components/card";
+import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
 
 export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          Loading...
+        </div>
+      }
+    >
+      <SignupPageContent />
+    </Suspense>
+  );
+}
+
+function SignupPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  async function handleOAuthSignIn(provider: string) {
+    await signIn(provider, { redirectTo: callbackUrl });
+  }
 
   async function getErrorMessage(res: Response): Promise<string> {
     const fallback = "Unable to create account right now. Please try again.";
@@ -75,7 +96,7 @@ export default function SignupPage() {
         return;
       }
 
-      router.push("/dashboard");
+      router.push(callbackUrl || "/dashboard");
       router.refresh();
     } catch {
       setError("Unable to create account right now. Please try again.");
@@ -145,6 +166,12 @@ export default function SignupPage() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating account..." : "Create account"}
             </Button>
+
+            <SocialLoginButtons
+              onGoogleClick={() => handleOAuthSignIn("google")}
+              onLinkedInClick={() => handleOAuthSignIn("linkedin")}
+            />
+
             <p className="text-sm text-muted-foreground">
               Already have an account?{" "}
               <Link

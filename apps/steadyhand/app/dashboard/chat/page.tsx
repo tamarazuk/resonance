@@ -5,6 +5,17 @@ import type { Experience } from "@resonance/types";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { ExperienceCard } from "@/components/memory/ExperienceCard";
 import { ExperienceForm } from "@/components/memory/ExperienceForm";
+import { ResumeUpload } from "@/components/memory/ResumeUpload";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@resonance/ui/components/alert-dialog";
+import { Button } from "@resonance/ui/components/button";
 import {
   EmptyState,
   EmptyStateIcon,
@@ -24,6 +35,15 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("All");
 
+  // Edit/delete state
+  const [editingExperience, setEditingExperience] = useState<Experience | null>(
+    null,
+  );
+  const [deletingExperience, setDeletingExperience] =
+    useState<Experience | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const fetchExperiences = useCallback(async () => {
     try {
       const res = await fetch("/api/experiences");
@@ -42,13 +62,34 @@ export default function ChatPage() {
     fetchExperiences();
   }, [fetchExperiences]);
 
+  async function handleDelete() {
+    if (!deletingExperience) return;
+    setDeleteLoading(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/experiences/${deletingExperience.id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setDeletingExperience(null);
+        fetchExperiences();
+      } else {
+        setDeleteError("Failed to delete experience. Please try again.");
+      }
+    } catch {
+      setDeleteError("Network error — please try again.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
+
   // Filter tabs — "All" plus unique categories extracted from experiences
   const filterTabs = ["All", "Leadership", "Technical", "Conflict"];
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full flex-col lg:flex-row">
       {/* Left column — Chat interface (60%) */}
-      <div className="flex w-3/5 flex-col border-r border-border bg-card">
+      <div className="flex w-full flex-col border-b border-border bg-card lg:w-3/5 lg:border-b-0 lg:border-r">
         {/* Chat header */}
         <div className="flex items-center justify-between border-b border-border/50 bg-card/90 px-8 py-5 backdrop-blur-sm">
           <div>
@@ -75,21 +116,24 @@ export default function ChatPage() {
       </div>
 
       {/* Right column — Memory Bank sidebar (40%) */}
-      <div className="flex w-2/5 flex-col bg-secondary">
+      <div className="flex w-full flex-col bg-secondary lg:w-2/5">
         {/* Sidebar header */}
         <div className="flex items-center justify-between px-8 py-6">
           <h2 className="text-base font-semibold tracking-tight text-foreground">
             Memory Bank
           </h2>
-          <ExperienceForm
-            onSaved={fetchExperiences}
-            trigger={
-              <button className="flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80">
-                <PlusIcon className="h-4.5 w-4.5" />
-                New Entry
-              </button>
-            }
-          />
+          <div className="flex items-center gap-3">
+            <ResumeUpload onUploaded={fetchExperiences} />
+            <ExperienceForm
+              onSaved={fetchExperiences}
+              trigger={
+                <button className="flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80">
+                  <PlusIcon className="h-4.5 w-4.5" />
+                  New Entry
+                </button>
+              }
+            />
+          </div>
         </div>
 
         {/* Filter tabs */}
@@ -130,7 +174,12 @@ export default function ChatPage() {
             </div>
           ) : (
             experiences.map((exp) => (
-              <ExperienceCard key={exp.id} experience={exp} />
+              <ExperienceCard
+                key={exp.id}
+                experience={exp}
+                onEdit={setEditingExperience}
+                onDelete={setDeletingExperience}
+              />
             ))
           )}
         </div>
@@ -150,6 +199,58 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit experience dialog (controlled) */}
+      {editingExperience && (
+        <ExperienceForm
+          experience={editingExperience}
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) setEditingExperience(null);
+          }}
+          onSaved={() => {
+            setEditingExperience(null);
+            fetchExperiences();
+          }}
+        />
+      )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog
+        open={!!deletingExperience}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeletingExperience(null);
+            setDeleteError(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Experience</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this experience from your Memory
+              Bank. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteError && (
+            <p className="text-sm text-destructive">{deleteError}</p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLoading}>
+              Cancel
+            </AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteLoading}
+            >
+              {deleteLoading ? "Deleting..." : "Delete"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

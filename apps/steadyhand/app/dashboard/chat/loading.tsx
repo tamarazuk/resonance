@@ -2,7 +2,7 @@ import { Skeleton } from "@resonance/ui/components/skeleton";
 
 export default function DashboardChatLoading() {
   return (
-    <div className="flex h-full" aria-busy="true">
+    <div className="flex h-full flex-col lg:flex-row" aria-busy="true">
       <span
         className="sr-only"
         role="status"
@@ -12,7 +12,7 @@ export default function DashboardChatLoading() {
         Loading career coach
       </span>
 
-      <div className="flex w-3/5 flex-col border-r border-border bg-card">
+      <div className="flex w-full flex-col border-b border-border bg-card lg:w-3/5 lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between border-b border-border/50 bg-card/90 px-8 py-5">
           <div className="space-y-2">
             <Skeleton className="h-6 w-44" />
@@ -49,7 +49,7 @@ export default function DashboardChatLoading() {
         </div>
       </div>
 
-      <div className="flex w-2/5 flex-col bg-secondary">
+      <div className="flex w-full flex-col bg-secondary lg:w-2/5">
         <div className="flex items-center justify-between px-8 py-6">
           <Skeleton className="h-6 w-28" />
           <Skeleton className="h-5 w-20" />
