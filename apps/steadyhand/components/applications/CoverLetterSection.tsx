@@ -39,7 +39,6 @@ export function CoverLetterSection({ application }: CoverLetterSectionProps) {
 
   const handleComplete = (paragraphs: string[]) => {
     setGeneratedParagraphs(paragraphs);
-    setIsGenerating(false);
   };
 
   const handleSave = async () => {
@@ -85,11 +84,20 @@ export function CoverLetterSection({ application }: CoverLetterSectionProps) {
       </div>
 
       {isGenerating ? (
-        <StreamingCoverLetter
-          applicationId={application.id}
-          onComplete={handleComplete}
-          autoStart
-        />
+        <div className="space-y-4">
+          <StreamingCoverLetter
+            applicationId={application.id}
+            onComplete={handleComplete}
+            autoStart
+          />
+          {canSave && (
+            <div className="flex justify-end">
+              <Button onClick={handleSave} disabled={isSaving} size="sm">
+                {isSaving ? "Saving..." : "Save to Application"}
+              </Button>
+            </div>
+          )}
+        </div>
       ) : displayParagraphs.length > 0 ? (
         <div className="space-y-4">
           <CoverLetter paragraphs={displayParagraphs} />
