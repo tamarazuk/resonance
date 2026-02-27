@@ -44,6 +44,16 @@ export async function POST(req: Request, { params }: RouteParams) {
 
   // If only saving existing cover letter paragraphs (no regeneration needed)
   if (body.coverLetterParagraphs && application.parsedJD) {
+    if (
+      !Array.isArray(body.coverLetterParagraphs) ||
+      !body.coverLetterParagraphs.every((p) => typeof p === "string")
+    ) {
+      return NextResponse.json(
+        { error: "Invalid coverLetterParagraphs: must be an array of strings" },
+        { status: 400 },
+      );
+    }
+
     const existingMaterials = application.draftedMaterials;
     const [updated] = await db
       .update(applications)

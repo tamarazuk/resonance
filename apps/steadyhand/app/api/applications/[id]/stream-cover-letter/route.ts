@@ -51,7 +51,7 @@ export async function POST(_req: Request, { params }: RouteParams) {
   let ranked;
   try {
     ranked = await rankExperiencesByFit(application.parsedJD, userId, 5);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to rank experiences" },
       { status: 500 },
