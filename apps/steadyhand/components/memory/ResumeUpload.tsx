@@ -153,6 +153,7 @@ export function ResumeUpload({ onUploaded }: { onUploaded?: () => void }) {
     setError(null);
 
     const failures: string[] = [];
+    const failedIndices: number[] = [];
     let savedCount = 0;
 
     try {
@@ -171,25 +172,29 @@ export function ResumeUpload({ onUploaded }: { onUploaded?: () => void }) {
               "Failed to save experience",
             );
             failures.push(`Experience ${i + 1}: ${errorMessage}`);
+            failedIndices.push(i);
           } else {
             savedCount++;
           }
         } catch {
           failures.push(`Experience ${i + 1}: network error`);
+          failedIndices.push(i);
         }
-      }
-
-      if (failures.length > 0) {
-        const msg = `Saved ${savedCount}/${parsedExperiences.length}. Failed: ${failures.join("; ")}`;
-        setError(msg);
-        toast.error(msg);
       }
 
       if (savedCount > 0) {
         onUploaded?.();
       }
 
-      if (failures.length === 0) {
+      if (failures.length > 0) {
+        // Keep only failed entries so retry won't duplicate saved ones
+        setParsedExperiences(
+          failedIndices.map((idx) => parsedExperiences[idx]),
+        );
+        const msg = `Saved ${savedCount}/${parsedExperiences.length}. Failed: ${failures.join("; ")}`;
+        setError(msg);
+        toast.error(msg);
+      } else {
         toast.success(
           `Saved ${savedCount} experience${savedCount === 1 ? "" : "s"} from resume`,
         );
