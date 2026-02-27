@@ -94,6 +94,12 @@ export function createMockOpenAI(): {
 } {
   const chat = {
     completions: {
+      /**
+       * Creates a mock chat completion response.
+       * @remarks This is a simplified mock that ignores input options and returns
+       * a default response. For tests requiring custom behavior, use `createMockChatCompletion`
+       * directly with desired options.
+       */
       create: async (): Promise<
         ReturnType<typeof createMockChatCompletion>
       > => {
