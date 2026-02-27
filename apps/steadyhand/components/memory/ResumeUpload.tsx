@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@resonance/ui/components/button";
 import {
   Dialog,
@@ -121,6 +122,7 @@ export function ResumeUpload({ onUploaded }: { onUploaded?: () => void }) {
           "Failed to parse resume",
         );
         setError(errorMessage);
+        toast.error(errorMessage);
         return;
       }
 
@@ -133,9 +135,11 @@ export function ResumeUpload({ onUploaded }: { onUploaded?: () => void }) {
         setOpen(true);
       } else {
         setError("No experiences found in resume.");
+        toast.error("No experiences found in resume.");
       }
     } catch {
       setError("Network error — please try again");
+      toast.error("Network error — please try again");
     } finally {
       setLoading(false);
       if (fileInputRef.current) {
@@ -176,9 +180,9 @@ export function ResumeUpload({ onUploaded }: { onUploaded?: () => void }) {
       }
 
       if (failures.length > 0) {
-        setError(
-          `Saved ${savedCount}/${parsedExperiences.length}. Failed: ${failures.join("; ")}`,
-        );
+        const msg = `Saved ${savedCount}/${parsedExperiences.length}. Failed: ${failures.join("; ")}`;
+        setError(msg);
+        toast.error(msg);
       }
 
       if (savedCount > 0) {
@@ -186,11 +190,15 @@ export function ResumeUpload({ onUploaded }: { onUploaded?: () => void }) {
       }
 
       if (failures.length === 0) {
+        toast.success(
+          `Saved ${savedCount} experience${savedCount === 1 ? "" : "s"} from resume`,
+        );
         setOpen(false);
         setParsedExperiences([]);
       }
     } catch {
       setError("Network error — please try again");
+      toast.error("Network error — please try again");
     } finally {
       setLoading(false);
     }
