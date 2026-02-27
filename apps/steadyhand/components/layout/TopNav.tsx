@@ -7,6 +7,7 @@ const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/dashboard/applications", label: "Applications", matchPrefix: true },
   { href: "/dashboard/chat", label: "Career Coach" },
+  { href: "/dashboard/settings", label: "Settings" },
 ] as const;
 
 export function TopNav({ userInitial }: { userInitial: string }) {
