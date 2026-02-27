@@ -48,7 +48,16 @@ export async function POST(_req: Request, { params }: RouteParams) {
     );
   }
 
-  const ranked = await rankExperiencesByFit(application.parsedJD, userId, 5);
+  let ranked;
+  try {
+    ranked = await rankExperiencesByFit(application.parsedJD, userId, 5);
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to rank experiences" },
+      { status: 500 },
+    );
+  }
+
   const topExperiences = ranked.map((s) => s.experience);
 
   const experienceText = topExperiences

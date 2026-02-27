@@ -22,12 +22,15 @@ export function CoverLetterSection({ application }: CoverLetterSectionProps) {
   const [generatedParagraphs, setGeneratedParagraphs] = useState<
     string[] | null
   >(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const hasFitAnalysis = !!application.fitAnalysis;
   const existingParagraphs =
     application.draftedMaterials?.coverLetterParagraphs;
 
   const displayParagraphs = generatedParagraphs ?? existingParagraphs ?? [];
+  const hasGenerated = generatedParagraphs !== null;
+  const canSave = hasGenerated && !isSaving;
 
   const handleGenerate = () => {
     setIsGenerating(true);
@@ -37,6 +40,33 @@ export function CoverLetterSection({ application }: CoverLetterSectionProps) {
   const handleComplete = (paragraphs: string[]) => {
     setGeneratedParagraphs(paragraphs);
     setIsGenerating(false);
+  };
+
+  const handleSave = async () => {
+    if (!generatedParagraphs) return;
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(
+        `/api/applications/${application.id}/draft`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ coverLetterParagraphs: generatedParagraphs }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to save");
+      }
+
+      setGeneratedParagraphs(null);
+      window.location.reload();
+    } catch {
+      alert("Failed to save. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const canGenerate = hasFitAnalysis && !isGenerating;
@@ -60,7 +90,16 @@ export function CoverLetterSection({ application }: CoverLetterSectionProps) {
           onComplete={handleComplete}
         />
       ) : displayParagraphs.length > 0 ? (
-        <CoverLetter paragraphs={displayParagraphs} />
+        <div className="space-y-4">
+          <CoverLetter paragraphs={displayParagraphs} />
+          {canSave && (
+            <div className="flex justify-end">
+              <Button onClick={handleSave} disabled={isSaving} size="sm">
+                {isSaving ? "Saving..." : "Save to Application"}
+              </Button>
+            </div>
+          )}
+        </div>
       ) : (
         <EmptyState>
           <EmptyStateIcon>
