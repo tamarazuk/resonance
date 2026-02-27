@@ -12,6 +12,16 @@ metadata:
 
 Autonomously address all unresolved review comments on the pull request associated with the current branch.
 
+## ⚠️ CRITICAL: You MUST reply to EACH specific comment
+
+**Do not just say "fixed" in a general PR comment.** You must reply to the **specific** GitHub comment that raised the issue.
+
+- For **inline review comments**: Use `in_reply_to=COMMENT_DATABASE_ID` to reply to that exact comment
+- For **general PR comments**: Reply to that specific comment
+- Each reply must include the commit SHA if fixed, or the reason if skipped
+
+Failure to reply to the specific comment will leave the review thread unresolved and the user will have to manually track which comments were addressed.
+
 ## Prerequisites
 
 - `gh` CLI must be authenticated (`gh auth status`)
@@ -34,13 +44,30 @@ This outputs JSON with the structure:
   "pull_request": { "number": 34, "url": "...", "title": "...", "state": "OPEN", "author": "...", "owner": "...", "repo": "..." },
   "conversation_comments": [ ... ],
   "reviews": [ ... ],
-  "review_threads": [ ... ]
+  "review_threads": [
+    {
+      "path": "apps/steadyhand/app/page.tsx",
+      "line": 42,
+      "isResolved": false,
+      "isOutdated": false,
+      "comments": [
+        {
+          "id": "12345678",
+          "databaseId": 87654321,
+          "body": "This should be fixed...",
+          "author": { "login": "reviewer" }
+        }
+      ]
+    }
+  ]
 }
 ```
 
+**IMPORTANT:** Each comment has BOTH `id` (GraphQL) and `databaseId` (REST API). You MUST use `databaseId` for the `in_reply_to` parameter.
+
 With `--unresolved-only`, review threads are pre-filtered to unresolved (but outdated threads are kept, since "outdated" only means the diff context shifted — the concern may still need addressing). Omit the flag to get everything.
 
-Extract `owner` and `repo` from the `pull_request` object for subsequent API calls.
+Extract `owner`, `repo`, and `number` from the `pull_request` object for subsequent API calls.
 
 ### Step 2: Filter to actionable comments
 
@@ -75,23 +102,31 @@ When triaging, consider:
    fix(scope): address review — brief description
    ```
 3. Note the commit SHA from the output of `git commit`.
-4. Reply on the GitHub review thread:
+4. **Reply to the SPECIFIC comment** using the `databaseId`:
+
    ```sh
    gh api repos/OWNER/REPO/pulls/NUMBER/comments \
      -f body="Fixed in COMMIT_SHA — brief explanation of what was changed." \
-     -F in_reply_to=COMMENT_DATABASE_ID
+     -F in_reply_to=DATABASE_ID_FROM_COMMENT
    ```
+
+   **Replace:**
+   - `OWNER` with the repo owner (e.g., `tamarazuk`)
+   - `REPO` with the repo name (e.g., `resonance`)
+   - `NUMBER` with the PR number
+   - `DATABASE_ID_FROM_COMMENT` with the comment's `databaseId` (NOT the `id`)
+   - `COMMIT_SHA` with your commit hash
 
 Make **one commit per comment** so each GitHub reply can link to a specific SHA.
 
 #### For skips
 
-Reply on the GitHub review thread explaining why:
+**Reply to the SPECIFIC comment** using the `databaseId`:
 
 ```sh
 gh api repos/OWNER/REPO/pulls/NUMBER/comments \
   -f body="Skipping this one — explanation of the design choice or reasoning." \
-  -F in_reply_to=COMMENT_DATABASE_ID
+  -F in_reply_to=DATABASE_ID_FROM_COMMENT
 ```
 
 Be respectful and specific. Reference the design decision, existing pattern, or trade-off that justifies the choice.
@@ -104,6 +139,7 @@ After all comments are addressed, present a summary to the user:
 - How many were filtered out (resolved, outdated, self, bot)
 - How many were fixed (with commit SHAs)
 - How many were skipped (with brief reasons)
+- **For each fix/skip: include which comment databaseId it was replying to**
 
 ## Notes
 
