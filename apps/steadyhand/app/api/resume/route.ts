@@ -45,8 +45,14 @@ async function extractTextFromDOCX(buffer: Buffer): Promise<string> {
   try {
     const mammoth = await import("mammoth");
     const result = await mammoth.extractRawText({ buffer });
-    if (result.errors && result.errors.length > 0) {
-      console.warn("Mammoth extraction warnings:", result.errors);
+    if (
+      (result as { errors?: unknown[] }).errors &&
+      (result as { errors?: unknown[] }).errors.length > 0
+    ) {
+      console.warn(
+        "Mammoth extraction warnings:",
+        (result as { errors?: unknown[] }).errors,
+      );
     }
     return result.value;
   } catch (error) {
