@@ -168,7 +168,9 @@ After all comments are addressed, present a summary to the user:
 - How many were filtered out (resolved, outdated, self, bot)
 - How many were fixed (with commit SHAs)
 - How many were skipped (with brief reasons)
-- **For each fix/skip: include which comment databaseId it was replying to**
+- **For each fix/skip: include the identifier for the exact comment addressed**
+  - Review-thread comments: include `databaseId` used with `in_reply_to`
+  - `conversation_comments`: include `COMMENT_URL`/`html_url` used in the issues-comment reply
 
 ## Notes
 
