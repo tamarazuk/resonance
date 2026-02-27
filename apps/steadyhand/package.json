@@ -19,6 +19,7 @@
     "@resonance/ui": "workspace:*",
     "ai": "^6.0.99",
     "bcryptjs": "^3.0.3",
+    "date-fns": "^4.1.0",
     "next": "16.1.6",
     "next-auth": "5.0.0-beta.30",
     "openai": "^6.25.0",
