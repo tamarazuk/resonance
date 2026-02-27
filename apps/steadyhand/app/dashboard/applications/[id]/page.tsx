@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { Application, ApplicationStatus } from "@resonance/types";
 import { ParsedJD } from "@/components/applications/ParsedJD";
 import { FitAnalysis } from "@/components/applications/FitAnalysis";
-import { CoverLetter } from "@/components/applications/CoverLetter";
+import { CoverLetterSection } from "@/components/applications/CoverLetterSection";
 import { SelectedBullets } from "@/components/applications/SelectedBullets";
 import { ApplicationTabs } from "@/components/applications/ApplicationTabs";
 import {
@@ -194,32 +194,7 @@ export default async function ApplicationDetailPage({
           materialsContent={
             <div className="space-y-8">
               {/* Cover Letter */}
-              <div className="rounded-2xl border border-border bg-card p-8">
-                <h3 className="mb-6 text-base font-semibold text-foreground">
-                  Cover Letter
-                </h3>
-                {application.draftedMaterials?.coverLetterParagraphs?.length ? (
-                  <CoverLetter
-                    paragraphs={
-                      application.draftedMaterials.coverLetterParagraphs
-                    }
-                  />
-                ) : (
-                  <EmptyState>
-                    <EmptyStateIcon>
-                      <PenIcon className="h-10 w-10" />
-                    </EmptyStateIcon>
-                    <EmptyStateTitle>Not yet drafted</EmptyStateTitle>
-                    <EmptyStateDescription>
-                      Generate a cover letter after the fit analysis is
-                      complete.
-                    </EmptyStateDescription>
-                    <EmptyStateAction>
-                      <Button disabled>Generate Draft</Button>
-                    </EmptyStateAction>
-                  </EmptyState>
-                )}
-              </div>
+              <CoverLetterSection application={application} />
 
               {/* Tailored Bullets */}
               <div className="rounded-2xl border border-border bg-card p-8">
@@ -418,23 +393,6 @@ function BarChartIcon({ className }: { className?: string }) {
       <line x1="12" x2="12" y1="20" y2="10" />
       <line x1="18" x2="18" y1="20" y2="4" />
       <line x1="6" x2="6" y1="20" y2="16" />
-    </svg>
-  );
-}
-
-function PenIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
     </svg>
   );
 }
