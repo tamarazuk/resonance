@@ -99,28 +99,40 @@ Please write a professional cover letter tailored to this position.`;
     async start(controller) {
       let accumulatedText = "";
 
-      for await (const chunk of stream) {
-        accumulatedText += chunk;
+      try {
+        for await (const chunk of stream) {
+          accumulatedText += chunk;
 
-        const sseData = JSON.stringify({
-          type: "text",
-          value: chunk,
-          accumulated: accumulatedText,
+          const sseData = JSON.stringify({
+            type: "text",
+            value: chunk,
+            accumulated: accumulatedText,
+          });
+          controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
+        }
+
+        const paragraphs = accumulatedText
+          .split("\n\n")
+          .filter((p) => p.trim())
+          .map((p) => p.replace(/\n/g, " ").trim());
+
+        const finishData = JSON.stringify({
+          type: "finish",
+          paragraphs,
         });
-        controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
+        controller.enqueue(encoder.encode(`data: ${finishData}\n\n`));
+      } catch (error) {
+        const errorData = JSON.stringify({
+          type: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "An unexpected error occurred while streaming the cover letter.",
+        });
+        controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
+      } finally {
+        controller.close();
       }
-
-      const paragraphs = accumulatedText
-        .split("\n\n")
-        .filter((p) => p.trim())
-        .map((p) => p.replace(/\n/g, " ").trim());
-
-      const finishData = JSON.stringify({
-        type: "finish",
-        paragraphs,
-      });
-      controller.enqueue(encoder.encode(`data: ${finishData}\n\n`));
-      controller.close();
     },
   });
 
