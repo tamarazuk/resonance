@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from "@resonance/ui/components/card";
 import { Skeleton } from "@resonance/ui/components/skeleton";
-import { Button } from "@resonance/ui/components/button";
 
 type Preferences = UserPreferences;
 
@@ -25,19 +24,6 @@ export function SettingsClient({ initialPreferences }: SettingsClientProps) {
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  if (error) {
-    return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-10">
-          <p className="mb-4 text-sm text-destructive">{error}</p>
-          <Button variant="outline" onClick={() => window.location.reload()}>
-            Retry
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
   if (!preferences) {
     return (
       <div className="space-y-6">
@@ -50,6 +36,7 @@ export function SettingsClient({ initialPreferences }: SettingsClientProps) {
 
   async function handleToggle(key: keyof Preferences) {
     if (!preferences) return;
+    setError(null);
     const currentValue = preferences[key];
     const newValue = !currentValue;
     setSaving(key);
@@ -91,6 +78,11 @@ export function SettingsClient({ initialPreferences }: SettingsClientProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {error ? (
+            <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </p>
+          ) : null}
           <ToggleItem
             title="Analytics"
             description="Allow anonymous usage data to help us improve the product."
