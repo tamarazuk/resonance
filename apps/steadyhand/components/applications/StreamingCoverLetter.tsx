@@ -147,7 +147,10 @@ export function StreamingCoverLetter({
   if (error) {
     return (
       <div className="space-y-4">
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+        <div
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600"
+        >
           {error}
         </div>
         <button
