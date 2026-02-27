@@ -24,7 +24,7 @@ Resume text:
 ---RESUME_END---`;
 
 const ExperienceSchema = z.object({
-  rawInput: z.string(),
+  rawInput: z.string().min(10),
   situation: z.string().optional(),
   task: z.string().optional(),
   action: z.string().optional(),
