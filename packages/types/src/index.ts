@@ -19,6 +19,7 @@ export interface UserPreferences {
   consentAnalytics: boolean;
   consentAiTraining: boolean;
   consentMarketing: boolean;
+  emotionalIntelligenceEnabled: boolean;
 }
 
 export interface SessionUser {
@@ -139,12 +140,14 @@ export const updatePreferencesSchema = z
     consentAnalytics: z.boolean().optional(),
     consentAiTraining: z.boolean().optional(),
     consentMarketing: z.boolean().optional(),
+    emotionalIntelligenceEnabled: z.boolean().optional(),
   })
   .refine(
     (data) =>
       data.consentAnalytics !== undefined ||
       data.consentAiTraining !== undefined ||
-      data.consentMarketing !== undefined,
+      data.consentMarketing !== undefined ||
+      data.emotionalIntelligenceEnabled !== undefined,
     {
       message: "At least one preference field must be provided",
     },
@@ -266,4 +269,85 @@ export interface TriageAction {
   priority: TriageActionPriority;
   type: TriageActionType;
   href: string;
+  emotionalContext?: UserEmotionalContext;
+}
+
+// ==================== Prep Engine Types ====================
+
+export interface CompanyResearch {
+  overview: string;
+  culture: string;
+  recentNews: string;
+  industry: string;
+  size: string;
+}
+
+export interface PredictedQuestion {
+  question: string;
+  category: string;
+  suggestedStoryId?: string;
+  suggestedStoryPreview?: string;
+}
+
+export interface TalkingPoint {
+  point: string;
+  supportingExperience?: string;
+}
+
+export interface CalmModeData {
+  keyPoints: [string, string, string];
+  openingStory: { title: string; preview: string };
+  groundingPrompt: string;
+}
+
+export interface PrepPacket {
+  id: string;
+  userId: string;
+  applicationId: string;
+  companyResearch: CompanyResearch | null;
+  predictedQuestions: PredictedQuestion[] | null;
+  talkingPoints: TalkingPoint[] | null;
+  calmModeData: CalmModeData | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ==================== Follow-Up Types ====================
+
+export type FollowUpType = "thank_you" | "check_in" | "negotiation";
+
+export type FollowUpStatus = "draft" | "approved" | "sent" | "dismissed";
+
+export interface FollowUpDraft {
+  id: string;
+  userId: string;
+  applicationId: string;
+  type: FollowUpType;
+  content: string;
+  suggestedSendAt: Date | null;
+  status: FollowUpStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export const createFollowUpSchema = z.object({
+  type: z.enum(["thank_you", "check_in", "negotiation"]),
+});
+
+export const updateFollowUpSchema = z
+  .object({
+    content: z.string().min(1, "Content cannot be empty").optional(),
+    status: z.enum(["draft", "approved", "sent", "dismissed"]).optional(),
+  })
+  .refine((data) => data.content !== undefined || data.status !== undefined, {
+    message: "At least one field must be provided",
+  });
+
+// ==================== Emotional Intelligence Types ====================
+
+export interface UserEmotionalContext {
+  recentRejections: number;
+  daysSinceActive: number;
+  activityTrend: "increasing" | "stable" | "decreasing" | "inactive";
+  suggestedTone: "standard" | "supportive" | "encouraging" | "celebratory";
 }
