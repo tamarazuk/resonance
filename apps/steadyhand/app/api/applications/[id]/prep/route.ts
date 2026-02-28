@@ -1,0 +1,164 @@
+import { NextResponse } from "next/server";
+import { db, applications, prepPackets, and, eq } from "@resonance/db";
+import { auth } from "@/lib/auth";
+import { rankExperiencesByFit } from "@/lib/analysis/fit";
+import { researchCompany } from "@/lib/analysis/company-research";
+import {
+  predictQuestions,
+  generateTalkingPoints,
+  distillCalmMode,
+} from "@/lib/llm/prompts/prep-engine";
+
+type RouteParams = { params: Promise<{ id: string }> };
+
+/** GET /api/applications/[id]/prep — retrieve existing prep packet. */
+export async function GET(_req: Request, { params }: RouteParams) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  const [packet] = await db
+    .select()
+    .from(prepPackets)
+    .where(
+      and(
+        eq(prepPackets.applicationId, id),
+        eq(prepPackets.userId, session.user.id),
+      ),
+    );
+
+  if (!packet) {
+    return NextResponse.json(
+      { error: "No prep packet found" },
+      { status: 404 },
+    );
+  }
+
+  return NextResponse.json(packet);
+}
+
+/** POST /api/applications/[id]/prep — generate a prep packet for an interview. */
+export async function POST(_req: Request, { params }: RouteParams) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const userId = session.user.id;
+
+  // Fetch the application
+  const [application] = await db
+    .select()
+    .from(applications)
+    .where(and(eq(applications.id, id), eq(applications.userId, userId)));
+
+  if (!application) {
+    return NextResponse.json(
+      { error: "Application not found" },
+      { status: 404 },
+    );
+  }
+
+  if (!application.parsedJD) {
+    return NextResponse.json(
+      { error: "Job description has not been parsed yet" },
+      { status: 422 },
+    );
+  }
+
+  const parsedJD = application.parsedJD;
+
+  // 1. Company research (Firecrawl + LLM fallback)
+  const companyResult = await researchCompany(
+    parsedJD.company,
+    application.externalUrl !== "manual_entry"
+      ? application.externalUrl
+      : undefined,
+  );
+  const companyResearch = companyResult.success ? companyResult.data! : null;
+
+  // 2. Rank user experiences by fit
+  const rankedExperiences = await rankExperiencesByFit(parsedJD, userId);
+  const topExperiences = rankedExperiences.map((s) => s.experience);
+
+  // 3. Predict interview questions
+  const questionsResult = await predictQuestions(parsedJD, companyResearch);
+  let predictedQuestionsList = questionsResult.success
+    ? questionsResult.data!
+    : [];
+
+  // Map predicted questions to closest Memory Bank stories
+  if (predictedQuestionsList.length > 0 && topExperiences.length > 0) {
+    predictedQuestionsList = predictedQuestionsList.map((q) => {
+      // Simple heuristic: assign the first relevant experience
+      const bestMatch = topExperiences[0];
+      return {
+        ...q,
+        suggestedStoryId: bestMatch?.id,
+        suggestedStoryPreview: bestMatch?.rawInput?.slice(0, 100),
+      };
+    });
+  }
+
+  // 4. Generate talking points
+  const talkingPointsResult = await generateTalkingPoints(
+    parsedJD,
+    companyResearch,
+    topExperiences,
+  );
+  const talkingPointsList = talkingPointsResult.success
+    ? talkingPointsResult.data!
+    : [];
+
+  // 5. Calm Mode distillation
+  const calmModeResult = await distillCalmMode(
+    talkingPointsList,
+    topExperiences,
+    parsedJD.company,
+  );
+  const calmModeData = calmModeResult.success ? calmModeResult.data! : null;
+
+  // 6. Upsert the prep packet
+  // Check if one already exists for this application
+  const [existing] = await db
+    .select({ id: prepPackets.id })
+    .from(prepPackets)
+    .where(
+      and(eq(prepPackets.applicationId, id), eq(prepPackets.userId, userId)),
+    );
+
+  let packet;
+
+  if (existing) {
+    [packet] = await db
+      .update(prepPackets)
+      .set({
+        companyResearch,
+        predictedQuestions: predictedQuestionsList,
+        talkingPoints: talkingPointsList,
+        calmModeData,
+      })
+      .where(eq(prepPackets.id, existing.id))
+      .returning();
+  } else {
+    [packet] = await db
+      .insert(prepPackets)
+      .values({
+        userId,
+        applicationId: id,
+        companyResearch,
+        predictedQuestions: predictedQuestionsList,
+        talkingPoints: talkingPointsList,
+        calmModeData,
+      })
+      .returning();
+  }
+
+  return NextResponse.json(packet);
+}
