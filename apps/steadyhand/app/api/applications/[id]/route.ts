@@ -56,7 +56,7 @@ export async function DELETE(_req: Request, { params }: RouteParams) {
     );
   }
 
-  return new Response(null, { status: 204 });
+  return new NextResponse(null, { status: 204 });
 }
 
 /** PATCH /api/applications/[id] — update application fields (status). */
