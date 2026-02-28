@@ -70,7 +70,9 @@ export function createMockChatCompletion(
     usage: {
       prompt_tokens: usage.promptTokens ?? 10,
       completion_tokens: usage.completionTokens ?? 20,
-      total_tokens: usage.totalTokens ?? 30,
+      total_tokens:
+        usage.totalTokens ??
+        (usage.promptTokens ?? 10) + (usage.completionTokens ?? 20),
     },
   };
 }
