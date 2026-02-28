@@ -118,6 +118,11 @@ describe("loginSchema", () => {
       password: "password",
     });
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some((issue) => issue.path.includes("email")),
+      ).toBe(true);
+    }
   });
 
   it("rejects empty email", () => {
@@ -126,6 +131,11 @@ describe("loginSchema", () => {
       password: "password",
     });
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some((issue) => issue.path.includes("email")),
+      ).toBe(true);
+    }
   });
 
   it("rejects empty password", () => {
@@ -180,6 +190,39 @@ describe("createExperienceSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("rejects starStructure missing result key", () => {
+    const result = createExperienceSchema.safeParse({
+      rawInput: "Led a team of 5 engineers to deliver feature work",
+      starStructure: {
+        situation: "Need",
+        task: "Build",
+        action: "Led",
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects starStructure with non-string values", () => {
+    const result = createExperienceSchema.safeParse({
+      rawInput: "Led a team of 5 engineers",
+      starStructure: {
+        situation: 123,
+        task: "Build",
+        action: "Led",
+        result: "Done",
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects skills with non-string entries", () => {
+    const result = createExperienceSchema.safeParse({
+      rawInput: "Led a team of 5 engineers",
+      skills: ["React", 123],
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("rejects short rawInput", () => {
     const result = createExperienceSchema.safeParse({
       rawInput: "short",
@@ -197,6 +240,11 @@ describe("createExperienceSchema", () => {
       rawInput: "",
     });
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some((issue) => issue.path.includes("rawInput")),
+      ).toBe(true);
+    }
   });
 });
 
@@ -241,11 +289,33 @@ describe("updateExperienceSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("rejects starStructure missing keys in update", () => {
+    const result = updateExperienceSchema.safeParse({
+      starStructure: {
+        situation: "Need",
+        task: "Build",
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects skills with non-string entries in update", () => {
+    const result = updateExperienceSchema.safeParse({
+      skills: ["React", { skill: "Node" }],
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("rejects short rawInput when provided", () => {
     const result = updateExperienceSchema.safeParse({
       rawInput: "short",
     });
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some((issue) => issue.path.includes("rawInput")),
+      ).toBe(true);
+    }
   });
 
   it("accepts empty object (no fields)", () => {
@@ -287,6 +357,9 @@ describe("createApplicationSchema", () => {
   it("rejects when neither externalUrl nor manualJD provided", () => {
     const result = createApplicationSchema.safeParse({});
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.length).toBeGreaterThan(0);
+    }
   });
 
   it("rejects invalid URL", () => {
@@ -316,6 +389,11 @@ describe("createApplicationSchema", () => {
       manualJD: "   ",
     });
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some((issue) => issue.path.includes("manualJD")),
+      ).toBe(true);
+    }
   });
 });
 
@@ -351,6 +429,11 @@ describe("updateApplicationSchema", () => {
       status: "invalid_status",
     });
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some((issue) => issue.path.includes("status")),
+      ).toBe(true);
+    }
   });
 
   it("accepts empty object", () => {
