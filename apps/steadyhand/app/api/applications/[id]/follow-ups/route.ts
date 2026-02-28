@@ -7,6 +7,48 @@ import { addHours } from "date-fns";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
+function parseSuggestedDelayHours(suggestedDelay: string): number | null {
+  const normalized = suggestedDelay.trim().toLowerCase();
+  const match = normalized.match(
+    /(\d+)\s*(hour|hours|hr|hrs|day|days|week|weeks|minute|minutes|min|mins)/,
+  );
+
+  if (match) {
+    const amount = Number.parseInt(match[1], 10);
+    const unit = match[2];
+
+    if (Number.isNaN(amount) || amount <= 0) {
+      return null;
+    }
+
+    if (unit.startsWith("week")) {
+      return amount * 24 * 7;
+    }
+
+    if (unit.startsWith("day")) {
+      return amount * 24;
+    }
+
+    if (unit.startsWith("hour") || unit === "hr" || unit === "hrs") {
+      return amount;
+    }
+
+    if (unit.startsWith("min") || unit.startsWith("minute")) {
+      return Math.max(1, Math.ceil(amount / 60));
+    }
+  }
+
+  if (normalized.includes("tomorrow")) {
+    return 24;
+  }
+
+  if (normalized.includes("next week")) {
+    return 24 * 7;
+  }
+
+  return null;
+}
+
 /** GET /api/applications/[id]/follow-ups — list follow-up drafts. */
 export async function GET(_req: Request, { params }: RouteParams) {
   const session = await auth();
@@ -95,8 +137,8 @@ export async function POST(req: Request, { params }: RouteParams) {
     );
   }
 
-  // Parse suggested delay into a timestamp
-  const suggestedSendAt = addHours(new Date(), 24); // Default 24h from now
+  const parsedDelayHours = parseSuggestedDelayHours(result.data.suggestedDelay);
+  const suggestedSendAt = addHours(new Date(), parsedDelayHours ?? 24);
 
   // Save the draft
   const [draft] = await db
