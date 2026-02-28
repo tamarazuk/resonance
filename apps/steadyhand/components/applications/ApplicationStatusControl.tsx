@@ -6,7 +6,7 @@ import type { ApplicationStatus } from "@resonance/types";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 
-const statusLabels: Record<ApplicationStatus, string> = {
+const statusLabels = {
   draft: "Draft",
   ready_to_apply: "Ready to Apply",
   applied: "Applied",
@@ -16,19 +16,9 @@ const statusLabels: Record<ApplicationStatus, string> = {
   offer: "Offer",
   rejected: "Rejected",
   withdrawn: "Withdrawn",
-};
+} satisfies Record<ApplicationStatus, string>;
 
-const statusOptions: ApplicationStatus[] = [
-  "draft",
-  "ready_to_apply",
-  "applied",
-  "phone_screen",
-  "technical_interview",
-  "final_interview",
-  "offer",
-  "rejected",
-  "withdrawn",
-];
+const statusOptions = Object.keys(statusLabels) as ApplicationStatus[];
 
 export function ApplicationStatusControl({
   applicationId,
