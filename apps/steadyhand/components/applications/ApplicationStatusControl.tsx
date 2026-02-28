@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ApplicationStatus } from "@resonance/types";
 import { toast } from "sonner";
@@ -40,6 +40,12 @@ export function ApplicationStatusControl({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<ApplicationStatus>(initialStatus);
+
+  useEffect(() => {
+    if (status !== initialStatus) {
+      setStatus(initialStatus);
+    }
+  }, [initialStatus, status]);
 
   function handleStatusChange(nextStatus: ApplicationStatus) {
     if (nextStatus === status) return;
