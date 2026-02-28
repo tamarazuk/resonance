@@ -75,6 +75,9 @@ export default function ChatPage() {
       setExperiences((prev) => {
         const index = prev.findIndex((item) => item.id === meta.tempId);
         if (index === -1) {
+          if (prev.some((item) => item.id === experience.id)) {
+            return prev;
+          }
           return [experience, ...prev];
         }
         const next = [...prev];
