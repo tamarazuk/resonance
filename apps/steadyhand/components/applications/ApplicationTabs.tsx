@@ -7,6 +7,7 @@ const tabs = [
   { id: "jd", label: "Job Description" },
   { id: "fit", label: "Fit Analysis" },
   { id: "materials", label: "Materials" },
+  { id: "follow_ups", label: "Follow-Ups" },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -16,6 +17,7 @@ interface ApplicationTabsProps {
   parsedJDContent: ReactNode;
   fitAnalysisContent: ReactNode;
   materialsContent: ReactNode;
+  followUpsContent: ReactNode;
 }
 
 export function ApplicationTabs({
@@ -23,6 +25,7 @@ export function ApplicationTabs({
   parsedJDContent,
   fitAnalysisContent,
   materialsContent,
+  followUpsContent,
 }: ApplicationTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>("fit");
 
@@ -70,6 +73,12 @@ export function ApplicationTabs({
       )}
 
       {activeTab === "materials" && materialsContent}
+
+      {activeTab === "follow_ups" && (
+        <div className="rounded-2xl border border-border bg-card p-4 md:p-8">
+          {followUpsContent}
+        </div>
+      )}
     </div>
   );
 }

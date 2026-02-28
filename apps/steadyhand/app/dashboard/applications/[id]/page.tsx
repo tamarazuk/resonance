@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import type { Application } from "@resonance/types";
+import type { Application, FollowUpDraft } from "@resonance/types";
 import { ParsedJD } from "@/components/applications/ParsedJD";
 import { FitAnalysis } from "@/components/applications/FitAnalysis";
 import { CoverLetterSection } from "@/components/applications/CoverLetterSection";
 import { SelectedBullets } from "@/components/applications/SelectedBullets";
 import { ApplicationTabs } from "@/components/applications/ApplicationTabs";
 import { ApplicationStatusControl } from "@/components/applications/ApplicationStatusControl";
+import { FollowUpList } from "@/components/applications/FollowUpList";
 import {
   EmptyState,
   EmptyStateIcon,
@@ -32,6 +33,23 @@ async function getApplication(id: string): Promise<Application | null> {
     return res.json();
   } catch {
     return null;
+  }
+}
+
+async function getFollowUps(id: string): Promise<FollowUpDraft[]> {
+  try {
+    const cookieStore = await cookies();
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/applications/${id}/follow-ups`,
+      {
+        headers: { cookie: cookieStore.toString() },
+        cache: "no-store",
+      },
+    );
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
   }
 }
 
@@ -65,7 +83,10 @@ export default async function ApplicationDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const application = await getApplication(id);
+  const [application, followUps] = await Promise.all([
+    getApplication(id),
+    getFollowUps(id),
+  ]);
 
   if (!application) {
     notFound();
@@ -225,6 +246,12 @@ export default async function ApplicationDetailPage({
                 )}
               </div>
             </div>
+          }
+          followUpsContent={
+            <FollowUpList
+              applicationId={application.id}
+              initialDrafts={followUps}
+            />
           }
         />
       </div>
