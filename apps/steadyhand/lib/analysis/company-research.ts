@@ -49,6 +49,11 @@ async function scrapeCompanyWebsite(
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "")
     .trim();
+
+  if (!slug) {
+    return null;
+  }
+
   const urlsToTry = [`https://www.${slug}.com`, `https://${slug}.com`];
 
   for (const url of urlsToTry) {
