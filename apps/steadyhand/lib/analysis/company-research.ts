@@ -116,6 +116,12 @@ I don't have website content available. Based on your knowledge of ${companyName
     systemPrompt: SYSTEM_PROMPT,
     userPrompt,
     temperature: 0.3,
-    parse: (raw) => companyResearchSchema.parse(JSON.parse(raw)),
+    parse: (raw) => {
+      try {
+        return companyResearchSchema.parse(JSON.parse(raw));
+      } catch {
+        throw new Error("Invalid company research JSON response");
+      }
+    },
   });
 }
