@@ -36,6 +36,16 @@ function generateEmbeddingVector(
   dimensions = 1536,
   rng: () => number = Math.random,
 ): number[] {
+  if (
+    !Number.isFinite(dimensions) ||
+    !Number.isInteger(dimensions) ||
+    dimensions <= 0
+  ) {
+    throw new RangeError(
+      "generateEmbeddingVector: dimensions must be a positive integer",
+    );
+  }
+
   const vector: number[] = [];
   for (let i = 0; i < dimensions; i++) {
     vector.push(rng() * 2 - 1);
