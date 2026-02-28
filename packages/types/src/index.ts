@@ -47,6 +47,12 @@ export interface Experience {
   updatedAt: Date;
 }
 
+export type ExperienceSaveMeta = {
+  mode: "create" | "update";
+  optimistic?: boolean;
+  tempId?: string;
+};
+
 export interface TailoredBullet {
   original: string;
   tailored: string;

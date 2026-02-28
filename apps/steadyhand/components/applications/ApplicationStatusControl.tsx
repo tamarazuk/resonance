@@ -1,0 +1,136 @@
+"use client";
+
+import { useEffect, useId, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import type { ApplicationStatus } from "@resonance/types";
+import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/errors";
+
+const statusLabels = {
+  draft: "Draft",
+  ready_to_apply: "Ready to Apply",
+  applied: "Applied",
+  phone_screen: "Phone Screen",
+  technical_interview: "Technical Interview",
+  final_interview: "Final Interview",
+  offer: "Offer",
+  rejected: "Rejected",
+  withdrawn: "Withdrawn",
+} satisfies Record<ApplicationStatus, string>;
+
+const statusOptions = Object.keys(statusLabels) as ApplicationStatus[];
+
+export function ApplicationStatusControl({
+  applicationId,
+  initialStatus,
+}: {
+  applicationId: string;
+  initialStatus: ApplicationStatus;
+}) {
+  const router = useRouter();
+  const statusSelectId = useId();
+  const [, startTransition] = useTransition();
+  const [isSaving, setIsSaving] = useState(false);
+  const [status, setStatus] = useState<ApplicationStatus>(initialStatus);
+  const statusRef = useRef<ApplicationStatus>(initialStatus);
+  const latestRequestIdRef = useRef(0);
+
+  useEffect(() => {
+    setStatus((currentStatus) =>
+      currentStatus === initialStatus ? currentStatus : initialStatus,
+    );
+    statusRef.current = initialStatus;
+  }, [initialStatus]);
+
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+
+  async function handleStatusChange(nextStatus: ApplicationStatus) {
+    if (nextStatus === status) return;
+
+    const previousStatus = statusRef.current;
+    setStatus(nextStatus);
+    statusRef.current = nextStatus;
+    const requestId = latestRequestIdRef.current + 1;
+    latestRequestIdRef.current = requestId;
+
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/applications/${applicationId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        const message = getErrorMessage(payload, "Failed to update status");
+        if (requestId !== latestRequestIdRef.current) return;
+        setStatus(previousStatus);
+        statusRef.current = previousStatus;
+        toast.error(message);
+        return;
+      }
+
+      if (requestId !== latestRequestIdRef.current) return;
+      toast.success(`Status updated to ${statusLabels[nextStatus]}`);
+      startTransition(() => router.refresh());
+    } catch {
+      if (requestId !== latestRequestIdRef.current) return;
+      setStatus(previousStatus);
+      statusRef.current = previousStatus;
+      toast.error("Network error while updating status");
+    } finally {
+      if (requestId === latestRequestIdRef.current) {
+        setIsSaving(false);
+      }
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <StatusPill status={status} label={statusLabels[status]} />
+
+      <label className="sr-only" htmlFor={statusSelectId}>
+        Application status
+      </label>
+      <select
+        id={statusSelectId}
+        value={status}
+        onChange={(event) =>
+          handleStatusChange(event.target.value as ApplicationStatus)
+        }
+        disabled={isSaving}
+        className="rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-70"
+      >
+        {statusOptions.map((option) => (
+          <option key={option} value={option}>
+            {statusLabels[option]}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function StatusPill({
+  status,
+  label,
+}: {
+  status: ApplicationStatus;
+  label: string;
+}) {
+  const isActive = !["rejected", "withdrawn"].includes(status);
+  return (
+    <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-secondary px-4 py-1.5 text-sm font-medium text-primary">
+      {isActive && (
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-50" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+        </span>
+      )}
+      {label}
+    </div>
+  );
+}

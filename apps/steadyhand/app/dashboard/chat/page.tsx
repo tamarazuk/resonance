@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { Experience } from "@resonance/types";
+import type { Experience, ExperienceSaveMeta } from "@resonance/types";
+import { toast } from "sonner";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { ExperienceCard } from "@/components/memory/ExperienceCard";
 import { ExperienceForm } from "@/components/memory/ExperienceForm";
@@ -42,7 +43,6 @@ export default function ChatPage() {
   const [deletingExperience, setDeletingExperience] =
     useState<Experience | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const fetchExperiences = useCallback(async () => {
     try {
@@ -62,24 +62,91 @@ export default function ChatPage() {
     fetchExperiences();
   }, [fetchExperiences]);
 
+  function handleExperienceSaved(
+    experience: Experience,
+    meta?: ExperienceSaveMeta,
+  ) {
+    if (meta?.mode === "create" && meta.optimistic) {
+      setExperiences((prev) => [experience, ...prev]);
+      return;
+    }
+
+    if (meta?.mode === "create" && meta.tempId) {
+      setExperiences((prev) => {
+        const index = prev.findIndex((item) => item.id === meta.tempId);
+        if (index === -1) {
+          if (prev.some((item) => item.id === experience.id)) {
+            return prev;
+          }
+          return [experience, ...prev];
+        }
+        const next = [...prev];
+        next[index] = experience;
+        return next;
+      });
+      return;
+    }
+
+    if (meta?.mode === "update") {
+      setExperiences((prev) =>
+        prev.map((item) => (item.id === experience.id ? experience : item)),
+      );
+    }
+  }
+
+  function handleExperienceSaveError(
+    meta: Pick<ExperienceSaveMeta, "mode" | "tempId">,
+  ) {
+    if (meta.mode !== "create" || !meta.tempId) return;
+
+    setExperiences((prev) => prev.filter((item) => item.id !== meta.tempId));
+  }
+
+  function restoreDeletedExperience(
+    experienceToRestore: Experience,
+    previousIndex: number,
+  ) {
+    setExperiences((prev) => {
+      if (prev.some((item) => item.id === experienceToRestore.id)) {
+        return prev;
+      }
+      const next = [...prev];
+      const insertIndex =
+        previousIndex < 0 ? prev.length : Math.min(previousIndex, prev.length);
+      next.splice(insertIndex, 0, experienceToRestore);
+      return next;
+    });
+  }
+
   async function handleDelete() {
     if (!deletingExperience) return;
+    const experienceToDelete = deletingExperience;
+    const previousIndex = experiences.findIndex(
+      (item) => item.id === experienceToDelete.id,
+    );
+
+    setExperiences((prev) =>
+      prev.filter((item) => item.id !== experienceToDelete.id),
+    );
     setDeleteLoading(true);
-    setDeleteError(null);
+
     try {
-      const res = await fetch(`/api/experiences/${deletingExperience.id}`, {
+      const res = await fetch(`/api/experiences/${experienceToDelete.id}`, {
         method: "DELETE",
       });
+
       if (res.ok) {
-        setDeletingExperience(null);
-        fetchExperiences();
+        toast.success("Experience deleted");
       } else {
-        setDeleteError("Failed to delete experience. Please try again.");
+        restoreDeletedExperience(experienceToDelete, previousIndex);
+        toast.error("Failed to delete experience. Please try again.");
       }
     } catch {
-      setDeleteError("Network error — please try again.");
+      restoreDeletedExperience(experienceToDelete, previousIndex);
+      toast.error("Network error — please try again.");
     } finally {
       setDeleteLoading(false);
+      setDeletingExperience(null);
     }
   }
 
@@ -125,7 +192,8 @@ export default function ChatPage() {
           <div className="flex items-center gap-3">
             <ResumeUpload onUploaded={fetchExperiences} />
             <ExperienceForm
-              onSaved={fetchExperiences}
+              onSaved={handleExperienceSaved}
+              onSaveError={handleExperienceSaveError}
               trigger={
                 <button className="flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80">
                   <PlusIcon className="h-4.5 w-4.5" />
@@ -208,10 +276,11 @@ export default function ChatPage() {
           onOpenChange={(open) => {
             if (!open) setEditingExperience(null);
           }}
-          onSaved={() => {
+          onSaved={(experience, meta) => {
+            handleExperienceSaved(experience, meta);
             setEditingExperience(null);
-            fetchExperiences();
           }}
+          onSaveError={handleExperienceSaveError}
         />
       )}
 
@@ -221,7 +290,6 @@ export default function ChatPage() {
         onOpenChange={(open) => {
           if (!open) {
             setDeletingExperience(null);
-            setDeleteError(null);
           }
         }}
       >
@@ -233,9 +301,6 @@ export default function ChatPage() {
               Bank. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {deleteError && (
-            <p className="text-sm text-destructive">{deleteError}</p>
-          )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteLoading}>
               Cancel

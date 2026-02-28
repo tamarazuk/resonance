@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Experience } from "@resonance/types";
+import type { Experience, ExperienceSaveMeta } from "@resonance/types";
 import { toast } from "sonner";
 import { Button } from "@resonance/ui/components/button";
 import { Input } from "@resonance/ui/components/input";
@@ -30,12 +30,14 @@ export function ExperienceForm({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   onSaved,
+  onSaveError,
   trigger,
 }: {
   experience?: Experience;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  onSaved?: () => void;
+  onSaved?: (experience: Experience, meta?: ExperienceSaveMeta) => void;
+  onSaveError?: (meta: Pick<ExperienceSaveMeta, "mode" | "tempId">) => void;
   trigger?: React.ReactElement;
 }) {
   const isEditing = !!experience;
@@ -89,6 +91,7 @@ export function ExperienceForm({
     e.preventDefault();
     setError(null);
     setLoading(true);
+    let optimisticTempId: string | undefined;
 
     try {
       const skillsList = skills
@@ -120,6 +123,44 @@ export function ExperienceForm({
             skills: skillsList,
           };
 
+      const mode = experience ? "update" : "create";
+      const tempId =
+        mode === "create" ? `temp-${crypto.randomUUID()}` : undefined;
+      optimisticTempId = tempId;
+
+      if (mode === "create" && tempId) {
+        const trimmedSituation = situation.trim();
+        const trimmedTask = task.trim();
+        const trimmedAction = action.trim();
+        const trimmedResult = result.trim();
+        const hasAnyStarField =
+          trimmedSituation.length > 0 ||
+          trimmedTask.length > 0 ||
+          trimmedAction.length > 0 ||
+          trimmedResult.length > 0;
+
+        onSaved?.(
+          {
+            id: tempId,
+            userId: "optimistic",
+            rawInput,
+            starStructure: hasAnyStarField
+              ? {
+                  situation: trimmedSituation,
+                  task: trimmedTask,
+                  action: trimmedAction,
+                  result: trimmedResult,
+                }
+              : null,
+            skills: skillsList,
+            embedding: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          { mode, optimistic: true, tempId },
+        );
+      }
+
       const res = await fetch(url, {
         method: experience ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -127,18 +168,40 @@ export function ExperienceForm({
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        const message = data.error ?? "Failed to save experience";
+        const fallbackMessage = "Failed to save experience";
+        const textPayload = await res
+          .clone()
+          .text()
+          .then((value) => value.trim())
+          .catch(() => "");
+
+        let message = textPayload || fallbackMessage;
+        try {
+          const data = (await res.json()) as { error?: unknown };
+          if (typeof data.error === "string" && data.error.trim().length > 0) {
+            message = data.error;
+          }
+        } catch {
+          // Keep text payload fallback when response is not valid JSON.
+        }
+
+        onSaveError?.({ mode, tempId });
         setError(message);
         toast.error(message);
         return;
       }
 
+      const savedExperience = (await res.json()) as Experience;
+
       setOpen(false);
       toast.success("Experience saved to Memory Bank");
-      onSaved?.();
+      onSaved?.(savedExperience, { mode, tempId });
     } catch (error) {
       const message = "Network error — please try again";
+      onSaveError?.({
+        mode: experience ? "update" : "create",
+        tempId: optimisticTempId,
+      });
       setError(message);
       toast.error(message);
       console.error("Save experience error:", error);

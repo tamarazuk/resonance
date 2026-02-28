@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import type { Application, ApplicationStatus } from "@resonance/types";
+import type { Application } from "@resonance/types";
 import { ParsedJD } from "@/components/applications/ParsedJD";
 import { FitAnalysis } from "@/components/applications/FitAnalysis";
 import { CoverLetterSection } from "@/components/applications/CoverLetterSection";
 import { SelectedBullets } from "@/components/applications/SelectedBullets";
 import { ApplicationTabs } from "@/components/applications/ApplicationTabs";
+import { ApplicationStatusControl } from "@/components/applications/ApplicationStatusControl";
 import {
   EmptyState,
   EmptyStateIcon,
@@ -33,18 +34,6 @@ async function getApplication(id: string): Promise<Application | null> {
     return null;
   }
 }
-
-const statusLabels: Record<ApplicationStatus, string> = {
-  draft: "Draft",
-  ready_to_apply: "Ready to Apply",
-  applied: "Applied",
-  phone_screen: "Phone Screen",
-  technical_interview: "Technical Interview",
-  final_interview: "Final Interview",
-  offer: "Offer",
-  rejected: "Rejected",
-  withdrawn: "Withdrawn",
-};
 
 export async function generateMetadata({
   params,
@@ -138,16 +127,10 @@ export default async function ApplicationDetailPage({
             </div>
 
             {/* Status + actions */}
-            <div className="flex flex-wrap items-center gap-3">
-              <StatusPill
-                status={application.status}
-                label={statusLabels[application.status]}
-              />
-              <button className="flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2 text-sm font-medium text-foreground transition-all hover:bg-muted">
-                <EditIcon className="h-4 w-4" />
-                Edit
-              </button>
-            </div>
+            <ApplicationStatusControl
+              applicationId={application.id}
+              initialStatus={application.status}
+            />
           </div>
         </div>
 
@@ -227,27 +210,6 @@ export default async function ApplicationDetailPage({
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function StatusPill({
-  status,
-  label,
-}: {
-  status: ApplicationStatus;
-  label: string;
-}) {
-  const isActive = !["rejected", "withdrawn"].includes(status);
-  return (
-    <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-secondary px-4 py-1.5 text-sm font-medium text-primary">
-      {isActive && (
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-50" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-        </span>
-      )}
-      {label}
-    </div>
-  );
-}
 
 function formatDate(date: Date | string): string {
   const d = new Date(date);
@@ -335,24 +297,6 @@ function LocationIcon({ className }: { className?: string }) {
     >
       <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
       <circle cx="12" cy="10" r="3" />
-    </svg>
-  );
-}
-
-function EditIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
-      <path d="m15 5 4 4" />
     </svg>
   );
 }
