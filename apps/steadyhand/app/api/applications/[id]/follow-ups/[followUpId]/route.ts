@@ -13,7 +13,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { followUpId } = await params;
+  const { id: applicationId, followUpId } = await params;
   const userId = session.user.id;
 
   let body: unknown;
@@ -50,7 +50,11 @@ export async function PUT(req: Request, { params }: RouteParams) {
     .update(followUpDrafts)
     .set(updates)
     .where(
-      and(eq(followUpDrafts.id, followUpId), eq(followUpDrafts.userId, userId)),
+      and(
+        eq(followUpDrafts.id, followUpId),
+        eq(followUpDrafts.userId, userId),
+        eq(followUpDrafts.applicationId, applicationId),
+      ),
     )
     .returning();
 
