@@ -73,13 +73,13 @@ export async function createMockTransaction<T>(
 }
 
 export function createMockSchema(): {
-  users: Record<string, unknown>;
-  experiences: Record<string, unknown>;
-  applications: Record<string, unknown>;
+  users: Record<string, unknown>[];
+  experiences: Record<string, unknown>[];
+  applications: Record<string, unknown>[];
 } {
   return {
-    users: {},
-    experiences: {},
-    applications: {},
+    users: [],
+    experiences: [],
+    applications: [],
   };
 }
