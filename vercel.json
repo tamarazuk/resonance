@@ -1,0 +1,12 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "pnpm run build",
+  "installCommand": "pnpm install",
+  "outputDirectory": "apps/steadyhand/.next/standalone",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/apps/steadyhand/$1"
+    }
+  ]
+}
