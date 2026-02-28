@@ -127,10 +127,33 @@ export default async function ApplicationDetailPage({
             </div>
 
             {/* Status + actions */}
-            <ApplicationStatusControl
-              applicationId={application.id}
-              initialStatus={application.status}
-            />
+            <div className="flex flex-col items-end gap-3">
+              <ApplicationStatusControl
+                applicationId={application.id}
+                initialStatus={application.status}
+              />
+              {(
+                [
+                  "phone_screen",
+                  "technical_interview",
+                  "final_interview",
+                ] as string[]
+              ).includes(application.status) && (
+                <Button
+                  variant="outline"
+                  nativeButton={false}
+                  render={
+                    <Link
+                      href={`/dashboard/applications/${application.id}/prep`}
+                    />
+                  }
+                  className="gap-2 rounded-full"
+                >
+                  <PrepIcon className="h-4 w-4" />
+                  Prep for Interview
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -337,6 +360,25 @@ function BarChartIcon({ className }: { className?: string }) {
       <line x1="12" x2="12" y1="20" y2="10" />
       <line x1="18" x2="18" y1="20" y2="4" />
       <line x1="6" x2="6" y1="20" y2="16" />
+    </svg>
+  );
+}
+
+function PrepIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+      <path d="M8 7h6" />
+      <path d="M8 11h8" />
     </svg>
   );
 }
