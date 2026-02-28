@@ -29,7 +29,8 @@ export function ApplicationStatusControl({
 }) {
   const router = useRouter();
   const statusSelectId = useId();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
+  const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState<ApplicationStatus>(initialStatus);
   const statusRef = useRef<ApplicationStatus>(initialStatus);
   const latestRequestIdRef = useRef(0);
@@ -45,7 +46,7 @@ export function ApplicationStatusControl({
     statusRef.current = status;
   }, [status]);
 
-  function handleStatusChange(nextStatus: ApplicationStatus) {
+  async function handleStatusChange(nextStatus: ApplicationStatus) {
     if (nextStatus === status) return;
 
     const previousStatus = statusRef.current;
@@ -54,34 +55,37 @@ export function ApplicationStatusControl({
     const requestId = latestRequestIdRef.current + 1;
     latestRequestIdRef.current = requestId;
 
-    startTransition(async () => {
-      try {
-        const res = await fetch(`/api/applications/${applicationId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: nextStatus }),
-        });
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/applications/${applicationId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
 
-        if (!res.ok) {
-          const payload = await res.json().catch(() => null);
-          const message = getErrorMessage(payload, "Failed to update status");
-          if (requestId !== latestRequestIdRef.current) return;
-          setStatus(previousStatus);
-          statusRef.current = previousStatus;
-          toast.error(message);
-          return;
-        }
-
-        if (requestId !== latestRequestIdRef.current) return;
-        toast.success(`Status updated to ${statusLabels[nextStatus]}`);
-        router.refresh();
-      } catch {
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        const message = getErrorMessage(payload, "Failed to update status");
         if (requestId !== latestRequestIdRef.current) return;
         setStatus(previousStatus);
         statusRef.current = previousStatus;
-        toast.error("Network error while updating status");
+        toast.error(message);
+        return;
       }
-    });
+
+      if (requestId !== latestRequestIdRef.current) return;
+      toast.success(`Status updated to ${statusLabels[nextStatus]}`);
+      startTransition(() => router.refresh());
+    } catch {
+      if (requestId !== latestRequestIdRef.current) return;
+      setStatus(previousStatus);
+      statusRef.current = previousStatus;
+      toast.error("Network error while updating status");
+    } finally {
+      if (requestId === latestRequestIdRef.current) {
+        setIsSaving(false);
+      }
+    }
   }
 
   return (
@@ -97,7 +101,7 @@ export function ApplicationStatusControl({
         onChange={(event) =>
           handleStatusChange(event.target.value as ApplicationStatus)
         }
-        disabled={isPending}
+        disabled={isSaving}
         className="rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-70"
       >
         {statusOptions.map((option) => (
