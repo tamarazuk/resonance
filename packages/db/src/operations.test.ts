@@ -898,7 +898,7 @@ describe("relation queries", () => {
     await db
       .select()
       .from(users)
-      .where(and(eq(users.id, "user-id"), eq(users.id, "other-id")));
+      .where(and(eq(users.id, "user-id"), eq(users.email, "user@example.com")));
 
     expect(mockFrom).toHaveBeenCalledWith(users);
     expect(mockWhere).toHaveBeenCalled();
