@@ -9,6 +9,7 @@ function toPreferences(row: typeof users.$inferSelect): UserPreferences {
     consentAnalytics: row.consentAnalytics,
     consentAiTraining: row.consentAiTraining,
     consentMarketing: row.consentMarketing,
+    emotionalIntelligenceEnabled: row.emotionalIntelligenceEnabled,
   };
 }
 

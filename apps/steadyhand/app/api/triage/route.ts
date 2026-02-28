@@ -3,6 +3,7 @@ import {
   db,
   experiences,
   applications,
+  users,
   eq,
   and,
   or,
@@ -15,6 +16,7 @@ import type { TriageAction, TriageActionPriority } from "@resonance/types";
 import { auth } from "@/lib/auth";
 import { MANUAL_ENTRY_LABEL } from "@/lib/applications/constants";
 import { subDays } from "date-fns";
+import { analyzeUserState } from "@/lib/emotional-intelligence";
 
 const priorityOrder: Record<TriageActionPriority, number> = {
   high: 0,
@@ -48,6 +50,18 @@ export async function GET() {
 
   const userId = session.user.id;
   const threeDaysAgo = subDays(new Date(), 3);
+
+  // Check if EI is enabled for this user
+  const [user] = await db
+    .select({
+      emotionalIntelligenceEnabled: users.emotionalIntelligenceEnabled,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  const eiEnabled = user?.emotionalIntelligenceEnabled ?? true;
+  const emotionalContext = eiEnabled ? await analyzeUserState(userId) : null;
 
   const actions: TriageAction[] = [];
 
@@ -126,13 +140,21 @@ export async function GET() {
     const daysSinceUpdate = Math.floor(
       (Date.now() - app.updatedAt.getTime()) / (1000 * 60 * 60 * 24),
     );
+
+    // Adjust language based on emotional context
+    const isSupportive = emotionalContext?.suggestedTone === "supportive";
+    const description = isSupportive
+      ? `It's been ${daysSinceUpdate} days since you applied. No rush, but a gentle check-in could help when you're ready.`
+      : `It's been ${daysSinceUpdate} days since you applied. Time to check in?`;
+
     actions.push({
       id: `app-follow-${app.id}`,
       title: `Follow up with ${company}`,
-      description: `It's been ${daysSinceUpdate} days since you applied. Time to check in?`,
+      description,
       priority: priorityFromDaysAgo(daysSinceUpdate),
       type: "follow_up",
       href: `/dashboard/applications/${app.id}`,
+      ...(emotionalContext ? { emotionalContext } : {}),
     });
   }
 
