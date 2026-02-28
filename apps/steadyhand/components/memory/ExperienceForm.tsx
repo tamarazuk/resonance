@@ -175,8 +175,23 @@ export function ExperienceForm({
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        const message = data.error ?? "Failed to save experience";
+        const fallbackMessage = "Failed to save experience";
+        const textPayload = await res
+          .clone()
+          .text()
+          .then((value) => value.trim())
+          .catch(() => "");
+
+        let message = textPayload || fallbackMessage;
+        try {
+          const data = (await res.json()) as { error?: unknown };
+          if (typeof data.error === "string" && data.error.trim().length > 0) {
+            message = data.error;
+          }
+        } catch {
+          // Keep text payload fallback when response is not valid JSON.
+        }
+
         onSaveError?.({ mode, tempId });
         setError(message);
         toast.error(message);
