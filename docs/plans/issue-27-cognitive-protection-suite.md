@@ -72,7 +72,7 @@ Retrieve existing prep packet.
 
 ## 3. Backend: Follow-Up Manager API
 
-### `POST /api/applications/[id]/follow-up`
+### `POST /api/applications/[id]/follow-ups`
 
 Generates a follow-up draft.
 
