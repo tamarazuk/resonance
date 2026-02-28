@@ -15,7 +15,10 @@ export function createMockDb(options: MockDbOptions = {}) {
   return {
     select: () => ({
       from: (table?: string) => {
-        const rows = table ? (tableMap[table] ?? users) : users;
+        const rows = table ? tableMap[table] : users;
+        if (table !== undefined && rows === undefined) {
+          throw new Error(`Unknown table: ${table}`);
+        }
 
         return {
           where: async () => rows,
