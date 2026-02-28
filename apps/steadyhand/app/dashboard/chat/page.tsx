@@ -130,7 +130,6 @@ export default function ChatPage() {
     setExperiences((prev) =>
       prev.filter((item) => item.id !== experienceToDelete.id),
     );
-    setDeletingExperience(null);
     setDeleteLoading(true);
 
     try {
@@ -149,6 +148,7 @@ export default function ChatPage() {
       toast.error("Network error — please try again.");
     } finally {
       setDeleteLoading(false);
+      setDeletingExperience(null);
     }
   }
 

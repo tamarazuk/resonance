@@ -42,10 +42,10 @@ export function ApplicationStatusControl({
   const [status, setStatus] = useState<ApplicationStatus>(initialStatus);
 
   useEffect(() => {
-    if (status !== initialStatus) {
-      setStatus(initialStatus);
-    }
-  }, [initialStatus, status]);
+    setStatus((currentStatus) =>
+      currentStatus === initialStatus ? currentStatus : initialStatus,
+    );
+  }, [initialStatus]);
 
   function handleStatusChange(nextStatus: ApplicationStatus) {
     if (nextStatus === status) return;
