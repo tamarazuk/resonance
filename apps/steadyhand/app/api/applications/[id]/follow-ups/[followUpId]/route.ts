@@ -39,6 +39,13 @@ export async function PUT(req: Request, { params }: RouteParams) {
   if (parsed.data.content !== undefined) updates.content = parsed.data.content;
   if (parsed.data.status !== undefined) updates.status = parsed.data.status;
 
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json(
+      { error: "At least one field must be provided" },
+      { status: 400 },
+    );
+  }
+
   const [updated] = await db
     .update(followUpDrafts)
     .set(updates)
