@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Experience } from "@resonance/types";
+import type { Experience, ExperienceSaveMeta } from "@resonance/types";
 import { toast } from "sonner";
 import { Button } from "@resonance/ui/components/button";
 import { Input } from "@resonance/ui/components/input";
@@ -36,15 +36,8 @@ export function ExperienceForm({
   experience?: Experience;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  onSaved?: (
-    experience: Experience,
-    meta?: {
-      mode: "create" | "update";
-      optimistic?: boolean;
-      tempId?: string;
-    },
-  ) => void;
-  onSaveError?: (meta: { mode: "create" | "update"; tempId?: string }) => void;
+  onSaved?: (experience: Experience, meta?: ExperienceSaveMeta) => void;
+  onSaveError?: (meta: Pick<ExperienceSaveMeta, "mode" | "tempId">) => void;
   trigger?: React.ReactElement;
 }) {
   const isEditing = !!experience;

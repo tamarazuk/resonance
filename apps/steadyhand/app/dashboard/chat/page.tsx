@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { Experience } from "@resonance/types";
+import type { Experience, ExperienceSaveMeta } from "@resonance/types";
 import { toast } from "sonner";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { ExperienceCard } from "@/components/memory/ExperienceCard";
@@ -64,11 +64,7 @@ export default function ChatPage() {
 
   function handleExperienceSaved(
     experience: Experience,
-    meta?: {
-      mode: "create" | "update";
-      optimistic?: boolean;
-      tempId?: string;
-    },
+    meta?: ExperienceSaveMeta,
   ) {
     if (meta?.mode === "create" && meta.optimistic) {
       setExperiences((prev) => [experience, ...prev]);
@@ -95,10 +91,9 @@ export default function ChatPage() {
     }
   }
 
-  function handleExperienceSaveError(meta: {
-    mode: "create" | "update";
-    tempId?: string;
-  }) {
+  function handleExperienceSaveError(
+    meta: Pick<ExperienceSaveMeta, "mode" | "tempId">,
+  ) {
     if (meta.mode !== "create" || !meta.tempId) return;
 
     setExperiences((prev) => prev.filter((item) => item.id !== meta.tempId));
