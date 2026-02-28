@@ -104,6 +104,22 @@ export default function ChatPage() {
     setExperiences((prev) => prev.filter((item) => item.id !== meta.tempId));
   }
 
+  function restoreDeletedExperience(
+    experienceToRestore: Experience,
+    previousIndex: number,
+  ) {
+    setExperiences((prev) => {
+      if (prev.some((item) => item.id === experienceToRestore.id)) {
+        return prev;
+      }
+      const next = [...prev];
+      const insertIndex =
+        previousIndex < 0 ? prev.length : Math.min(previousIndex, prev.length);
+      next.splice(insertIndex, 0, experienceToRestore);
+      return next;
+    });
+  }
+
   async function handleDelete() {
     if (!deletingExperience) return;
     const experienceToDelete = deletingExperience;
@@ -125,33 +141,11 @@ export default function ChatPage() {
       if (res.ok) {
         toast.success("Experience deleted");
       } else {
-        setExperiences((prev) => {
-          if (prev.some((item) => item.id === experienceToDelete.id)) {
-            return prev;
-          }
-          const next = [...prev];
-          const insertIndex =
-            previousIndex < 0
-              ? prev.length
-              : Math.min(previousIndex, prev.length);
-          next.splice(insertIndex, 0, experienceToDelete);
-          return next;
-        });
+        restoreDeletedExperience(experienceToDelete, previousIndex);
         toast.error("Failed to delete experience. Please try again.");
       }
     } catch {
-      setExperiences((prev) => {
-        if (prev.some((item) => item.id === experienceToDelete.id)) {
-          return prev;
-        }
-        const next = [...prev];
-        const insertIndex =
-          previousIndex < 0
-            ? prev.length
-            : Math.min(previousIndex, prev.length);
-        next.splice(insertIndex, 0, experienceToDelete);
-        return next;
-      });
+      restoreDeletedExperience(experienceToDelete, previousIndex);
       toast.error("Network error — please try again.");
     } finally {
       setDeleteLoading(false);
