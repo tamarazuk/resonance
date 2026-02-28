@@ -113,7 +113,11 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     .where(
       and(eq(applications.id, id), eq(applications.userId, session.user.id)),
     )
-    .returning();
+    .returning({
+      id: applications.id,
+      status: applications.status,
+      updatedAt: applications.updatedAt,
+    });
 
   if (!updated) {
     return NextResponse.json(
