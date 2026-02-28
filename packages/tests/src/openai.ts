@@ -13,12 +13,32 @@ export interface MockChatCompletionOptions {
 export interface MockEmbeddingOptions {
   text?: string;
   dimensions?: number;
+  seed?: number;
+  rng?: () => number;
 }
 
-function generateEmbeddingVector(dimensions = 1536): number[] {
+function createSeededRng(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state += 0x6d2b79f5;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Generates mock embedding vectors.
+ * Defaults to Math.random() but supports deterministic output via seed/rng.
+ */
+function generateEmbeddingVector(
+  dimensions = 1536,
+  rng: () => number = Math.random,
+): number[] {
   const vector: number[] = [];
   for (let i = 0; i < dimensions; i++) {
-    vector.push(Math.random() * 2 - 1);
+    vector.push(rng() * 2 - 1);
   }
   return vector;
 }
@@ -58,17 +78,23 @@ export function createMockChatCompletion(
 export function createMockEmbedding(
   options: MockEmbeddingOptions = {},
 ): number[] {
-  const { dimensions = 1536 } = options;
-  return generateEmbeddingVector(dimensions);
+  const { dimensions = 1536, seed, rng } = options;
+  const random =
+    rng ?? (seed === undefined ? Math.random : createSeededRng(seed));
+  return generateEmbeddingVector(dimensions, random);
 }
 
 export function createMockEmbeddings(
   texts: string[],
   dimensions = 1536,
+  options: Pick<MockEmbeddingOptions, "seed" | "rng"> = {},
 ): { index: number; embedding: number[] }[] {
+  const random =
+    options.rng ??
+    (options.seed === undefined ? Math.random : createSeededRng(options.seed));
   return texts.map((_, index) => ({
     index,
-    embedding: generateEmbeddingVector(dimensions),
+    embedding: generateEmbeddingVector(dimensions, random),
   }));
 }
 
