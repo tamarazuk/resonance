@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ApplicationStatus } from "@resonance/types";
 import { toast } from "sonner";
@@ -41,18 +41,28 @@ export function ApplicationStatusControl({
   const statusSelectId = useId();
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<ApplicationStatus>(initialStatus);
+  const statusRef = useRef<ApplicationStatus>(initialStatus);
+  const latestRequestIdRef = useRef(0);
 
   useEffect(() => {
     setStatus((currentStatus) =>
       currentStatus === initialStatus ? currentStatus : initialStatus,
     );
+    statusRef.current = initialStatus;
   }, [initialStatus]);
+
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
 
   function handleStatusChange(nextStatus: ApplicationStatus) {
     if (nextStatus === status) return;
 
-    const previousStatus = status;
+    const previousStatus = statusRef.current;
     setStatus(nextStatus);
+    statusRef.current = nextStatus;
+    const requestId = latestRequestIdRef.current + 1;
+    latestRequestIdRef.current = requestId;
 
     startTransition(async () => {
       try {
@@ -65,15 +75,20 @@ export function ApplicationStatusControl({
         if (!res.ok) {
           const payload = await res.json().catch(() => null);
           const message = getErrorMessage(payload, "Failed to update status");
+          if (requestId !== latestRequestIdRef.current) return;
           setStatus(previousStatus);
+          statusRef.current = previousStatus;
           toast.error(message);
           return;
         }
 
+        if (requestId !== latestRequestIdRef.current) return;
         toast.success(`Status updated to ${statusLabels[nextStatus]}`);
         router.refresh();
       } catch {
+        if (requestId !== latestRequestIdRef.current) return;
         setStatus(previousStatus);
+        statusRef.current = previousStatus;
         toast.error("Network error while updating status");
       }
     });
