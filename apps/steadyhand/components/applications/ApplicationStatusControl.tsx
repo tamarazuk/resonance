@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ApplicationStatus } from "@resonance/types";
 import { toast } from "sonner";
@@ -38,6 +38,7 @@ export function ApplicationStatusControl({
   initialStatus: ApplicationStatus;
 }) {
   const router = useRouter();
+  const statusSelectId = useId();
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<ApplicationStatus>(initialStatus);
 
@@ -82,11 +83,11 @@ export function ApplicationStatusControl({
     <div className="flex flex-wrap items-center gap-3">
       <StatusPill status={status} label={statusLabels[status]} />
 
-      <label className="sr-only" htmlFor="application-status-select">
+      <label className="sr-only" htmlFor={statusSelectId}>
         Application status
       </label>
       <select
-        id="application-status-select"
+        id={statusSelectId}
         value={status}
         onChange={(event) =>
           handleStatusChange(event.target.value as ApplicationStatus)
