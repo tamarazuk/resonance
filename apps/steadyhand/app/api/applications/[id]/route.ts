@@ -5,6 +5,19 @@ import { auth } from "@/lib/auth";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function invalidIdResponse() {
+  return NextResponse.json(
+    {
+      error: "Validation failed",
+      details: { id: ["Invalid application id"] },
+    },
+    { status: 400 },
+  );
+}
+
 /** GET /api/applications/[id] — get a single application by ID. */
 export async function GET(_req: Request, { params }: RouteParams) {
   const session = await auth();
@@ -14,6 +27,9 @@ export async function GET(_req: Request, { params }: RouteParams) {
   }
 
   const { id } = await params;
+  if (!UUID_RE.test(id)) {
+    return invalidIdResponse();
+  }
 
   const [application] = await db
     .select()
@@ -41,6 +57,9 @@ export async function DELETE(_req: Request, { params }: RouteParams) {
   }
 
   const { id } = await params;
+  if (!UUID_RE.test(id)) {
+    return invalidIdResponse();
+  }
 
   const [deleted] = await db
     .delete(applications)
@@ -68,6 +87,9 @@ export async function PATCH(req: Request, { params }: RouteParams) {
   }
 
   const { id } = await params;
+  if (!UUID_RE.test(id)) {
+    return invalidIdResponse();
+  }
 
   let body: unknown;
   try {
