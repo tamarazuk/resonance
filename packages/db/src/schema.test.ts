@@ -98,6 +98,7 @@ describe("users table", () => {
     expect(users.consentAnalytics).toBeDefined();
     expect(users.consentAiTraining).toBeDefined();
     expect(users.consentMarketing).toBeDefined();
+    expect(users.emotionalIntelligenceEnabled).toBeDefined();
     expect(users.createdAt).toBeDefined();
     expect(users.updatedAt).toBeDefined();
   });
@@ -112,6 +113,7 @@ describe("users table", () => {
       consentAnalytics: true,
       consentAiTraining: false,
       consentMarketing: false,
+      emotionalIntelligenceEnabled: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
