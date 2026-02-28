@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, expectTypeOf } from "vitest";
 import {
   users,
   accounts,
@@ -33,6 +33,58 @@ describe("applicationStatusEnum", () => {
       "withdrawn",
     ];
     expect(applicationStatusEnum.enumValues).toEqual(expectedStatuses);
+  });
+});
+
+describe("compile-time type inference", () => {
+  it("validates inferred User and NewUser types", () => {
+    expectTypeOf<User["id"]>().toEqualTypeOf<string>();
+    expectTypeOf<User["email"]>().toEqualTypeOf<string>();
+    expectTypeOf<User["passwordHash"]>().toEqualTypeOf<string | null>();
+    expectTypeOf<User["fullName"]>().toEqualTypeOf<string | null>();
+    expectTypeOf<User["headline"]>().toEqualTypeOf<string | null>();
+    expectTypeOf<User["consentAnalytics"]>().toEqualTypeOf<boolean>();
+    expectTypeOf<NewUser["email"]>().toEqualTypeOf<string>();
+    expectTypeOf<NewUser["passwordHash"]>().toEqualTypeOf<
+      string | null | undefined
+    >();
+  });
+
+  it("validates inferred Experience and Application nullable fields", () => {
+    expectTypeOf<Experience["skills"]>().toEqualTypeOf<string[]>();
+    expectTypeOf<Experience["embedding"]>().toEqualTypeOf<number[] | null>();
+    expectTypeOf<Application["parsedJD"]>().toEqualTypeOf<{
+      title: string;
+      company: string;
+      location: string | null;
+      requirements: string[];
+      responsibilities: string[];
+      skills: string[];
+      benefits: string[];
+      salary: string | null;
+    } | null>();
+    expectTypeOf<Application["status"]>().toEqualTypeOf<
+      | "draft"
+      | "ready_to_apply"
+      | "applied"
+      | "phone_screen"
+      | "technical_interview"
+      | "final_interview"
+      | "offer"
+      | "rejected"
+      | "withdrawn"
+    >();
+    expectTypeOf<NewApplication["embedding"]>().toEqualTypeOf<
+      number[] | null | undefined
+    >();
+  });
+
+  it("validates inferred Account optional token fields", () => {
+    expectTypeOf<Account["provider"]>().toEqualTypeOf<string>();
+    expectTypeOf<Account["accessToken"]>().toEqualTypeOf<string | null>();
+    expectTypeOf<Account["refreshToken"]>().toEqualTypeOf<string | null>();
+    expectTypeOf<Account["idToken"]>().toEqualTypeOf<string | null>();
+    expectTypeOf<NewAccount["providerAccountId"]>().toEqualTypeOf<string>();
   });
 });
 
