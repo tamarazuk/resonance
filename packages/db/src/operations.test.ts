@@ -879,6 +879,31 @@ describe("accounts CRUD operations", () => {
 });
 
 describe("relation queries", () => {
+  it("builds user-rooted query for user relation lookup", async () => {
+    const mockWhere = vi.fn().mockResolvedValue([]);
+    const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
+    mockDb.select.mockReturnValue({ from: mockFrom });
+
+    await db.select().from(users).where(eq(users.id, "user-id"));
+
+    expect(mockFrom).toHaveBeenCalledWith(users);
+    expect(mockWhere).toHaveBeenCalled();
+  });
+
+  it("builds user-rooted query with combined filters", async () => {
+    const mockWhere = vi.fn().mockResolvedValue([]);
+    const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
+    mockDb.select.mockReturnValue({ from: mockFrom });
+
+    await db
+      .select()
+      .from(users)
+      .where(and(eq(users.id, "user-id"), eq(users.id, "other-id")));
+
+    expect(mockFrom).toHaveBeenCalledWith(users);
+    expect(mockWhere).toHaveBeenCalled();
+  });
+
   it("builds query with userId filter for experiences", async () => {
     const mockWhere = vi.fn().mockResolvedValue([]);
     const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
