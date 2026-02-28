@@ -32,7 +32,23 @@ export async function POST(req: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const { messages } = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return new Response("Invalid JSON body", { status: 400 });
+  }
+
+  const messages =
+    typeof body === "object" && body !== null && "messages" in body
+      ? (body as { messages: unknown }).messages
+      : null;
+
+  if (!Array.isArray(messages)) {
+    return new Response("Invalid payload: messages must be an array", {
+      status: 400,
+    });
+  }
   const userId = session.user.id;
 
   // Check if EI is enabled and build emotional context
