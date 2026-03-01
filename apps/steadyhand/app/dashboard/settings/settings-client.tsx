@@ -127,6 +127,26 @@ export function SettingsClient({ initialPreferences }: SettingsClientProps) {
           />
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Wellbeing</CardTitle>
+          <CardDescription>
+            Steadyhand can adapt its tone and messaging based on your recent
+            activity. These features are designed to reduce stress during your
+            job search.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <ToggleItem
+            title="Emotional Intelligence"
+            description="Let Steadyhand adjust its tone after setbacks — softer language after rejections, a warm welcome back after breaks. No data is shared; this only changes how the app communicates with you."
+            checked={preferences.emotionalIntelligenceEnabled}
+            loading={saving !== null}
+            onChange={() => handleToggle("emotionalIntelligenceEnabled")}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

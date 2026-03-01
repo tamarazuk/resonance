@@ -2,6 +2,9 @@ import type {
   Experience,
   Application,
   DraftedMaterials,
+  PrepPacket,
+  FollowUpDraft,
+  FollowUpType,
 } from "@resonance/types";
 
 class ApiError extends Error {
@@ -110,4 +113,51 @@ export function generateDraft(
   return request<DraftedMaterials>(`/api/applications/${applicationId}/draft`, {
     method: "POST",
   });
+}
+
+// ==================== Prep Engine ====================
+
+export function getPrep(applicationId: string): Promise<PrepPacket> {
+  return request<PrepPacket>(`/api/applications/${applicationId}/prep`);
+}
+
+export function generatePrep(applicationId: string): Promise<PrepPacket> {
+  return request<PrepPacket>(`/api/applications/${applicationId}/prep`, {
+    method: "POST",
+  });
+}
+
+// ==================== Follow-Ups ====================
+
+export function listFollowUps(applicationId: string): Promise<FollowUpDraft[]> {
+  return request<FollowUpDraft[]>(
+    `/api/applications/${applicationId}/follow-ups`,
+  );
+}
+
+export function createFollowUp(
+  applicationId: string,
+  type: FollowUpType,
+): Promise<FollowUpDraft> {
+  return request<FollowUpDraft>(
+    `/api/applications/${applicationId}/follow-ups`,
+    {
+      method: "POST",
+      body: JSON.stringify({ type }),
+    },
+  );
+}
+
+export function updateFollowUp(
+  applicationId: string,
+  followUpId: string,
+  data: { content?: string; status?: FollowUpDraft["status"] },
+): Promise<FollowUpDraft> {
+  return request<FollowUpDraft>(
+    `/api/applications/${applicationId}/follow-ups/${followUpId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(data),
+    },
+  );
 }

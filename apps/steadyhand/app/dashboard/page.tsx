@@ -57,6 +57,13 @@ export default async function DashboardPage() {
     getTriageActions(),
   ]);
 
+  // Extract emotional context from triage actions (shared across all actions)
+  const emotionalContext = triageActions.find(
+    (a) => a.emotionalContext,
+  )?.emotionalContext;
+  const showWelcomeBack =
+    emotionalContext && emotionalContext.daysSinceActive > 3;
+
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-10 lg:px-10">
       {/* Page header */}
@@ -70,6 +77,18 @@ export default async function DashboardPage() {
       </div>
 
       <div className="flex flex-col gap-10">
+        {/* Welcome back message */}
+        {showWelcomeBack && (
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6">
+            <p className="text-base font-medium text-foreground">
+              Welcome back.
+            </p>
+            <p className="mt-1 text-sm font-light text-muted-foreground">
+              It&apos;s been a few days — no rush. Pick up wherever feels right,
+              or just look around.
+            </p>
+          </div>
+        )}
         {/* Action items */}
         <section>
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">

@@ -5,6 +5,10 @@ import {
   experiences,
   applications,
   applicationStatusEnum,
+  followUpTypeEnum,
+  followUpStatusEnum,
+  prepPackets,
+  followUpDrafts,
   usersRelations,
   accountsRelations,
   experiencesRelations,
@@ -33,6 +37,25 @@ describe("applicationStatusEnum", () => {
       "withdrawn",
     ];
     expect(applicationStatusEnum.enumValues).toEqual(expectedStatuses);
+  });
+});
+
+describe("follow-up enums", () => {
+  it("contains all expected follow-up type values", () => {
+    expect(followUpTypeEnum.enumValues).toEqual([
+      "thank_you",
+      "check_in",
+      "negotiation",
+    ]);
+  });
+
+  it("contains all expected follow-up status values", () => {
+    expect(followUpStatusEnum.enumValues).toEqual([
+      "draft",
+      "approved",
+      "sent",
+      "dismissed",
+    ]);
   });
 });
 
@@ -98,6 +121,7 @@ describe("users table", () => {
     expect(users.consentAnalytics).toBeDefined();
     expect(users.consentAiTraining).toBeDefined();
     expect(users.consentMarketing).toBeDefined();
+    expect(users.emotionalIntelligenceEnabled).toBeDefined();
     expect(users.createdAt).toBeDefined();
     expect(users.updatedAt).toBeDefined();
   });
@@ -112,6 +136,7 @@ describe("users table", () => {
       consentAnalytics: true,
       consentAiTraining: false,
       consentMarketing: false,
+      emotionalIntelligenceEnabled: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -354,6 +379,32 @@ describe("applications table", () => {
       },
     };
     expect(appWithMaterials.draftedMaterials?.resumeBullets).toHaveLength(1);
+  });
+});
+
+describe("prep packets and follow-up drafts tables", () => {
+  it("has prep packet column definitions", () => {
+    expect(prepPackets.id).toBeDefined();
+    expect(prepPackets.userId).toBeDefined();
+    expect(prepPackets.applicationId).toBeDefined();
+    expect(prepPackets.companyResearch).toBeDefined();
+    expect(prepPackets.predictedQuestions).toBeDefined();
+    expect(prepPackets.talkingPoints).toBeDefined();
+    expect(prepPackets.calmModeData).toBeDefined();
+    expect(prepPackets.createdAt).toBeDefined();
+    expect(prepPackets.updatedAt).toBeDefined();
+  });
+
+  it("has follow-up draft column definitions", () => {
+    expect(followUpDrafts.id).toBeDefined();
+    expect(followUpDrafts.userId).toBeDefined();
+    expect(followUpDrafts.applicationId).toBeDefined();
+    expect(followUpDrafts.type).toBeDefined();
+    expect(followUpDrafts.content).toBeDefined();
+    expect(followUpDrafts.suggestedSendAt).toBeDefined();
+    expect(followUpDrafts.status).toBeDefined();
+    expect(followUpDrafts.createdAt).toBeDefined();
+    expect(followUpDrafts.updatedAt).toBeDefined();
   });
 });
 

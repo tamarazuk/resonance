@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import type { Application } from "@resonance/types";
+import type { Application, FollowUpDraft } from "@resonance/types";
 import { ParsedJD } from "@/components/applications/ParsedJD";
 import { FitAnalysis } from "@/components/applications/FitAnalysis";
 import { CoverLetterSection } from "@/components/applications/CoverLetterSection";
 import { SelectedBullets } from "@/components/applications/SelectedBullets";
 import { ApplicationTabs } from "@/components/applications/ApplicationTabs";
 import { ApplicationStatusControl } from "@/components/applications/ApplicationStatusControl";
+import { FollowUpList } from "@/components/applications/FollowUpList";
 import {
   EmptyState,
   EmptyStateIcon,
@@ -17,6 +18,12 @@ import {
   EmptyStateAction,
 } from "@resonance/ui/components/empty-state";
 import { Button } from "@resonance/ui/components/button";
+
+const INTERVIEW_PREP_STAGES: Application["status"][] = [
+  "phone_screen",
+  "technical_interview",
+  "final_interview",
+];
 
 async function getApplication(id: string): Promise<Application | null> {
   try {
@@ -32,6 +39,23 @@ async function getApplication(id: string): Promise<Application | null> {
     return res.json();
   } catch {
     return null;
+  }
+}
+
+async function getFollowUps(id: string): Promise<FollowUpDraft[]> {
+  try {
+    const cookieStore = await cookies();
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/applications/${id}/follow-ups`,
+      {
+        headers: { cookie: cookieStore.toString() },
+        cache: "no-store",
+      },
+    );
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
   }
 }
 
@@ -65,7 +89,10 @@ export default async function ApplicationDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const application = await getApplication(id);
+  const [application, followUps] = await Promise.all([
+    getApplication(id),
+    getFollowUps(id),
+  ]);
 
   if (!application) {
     notFound();
@@ -127,10 +154,27 @@ export default async function ApplicationDetailPage({
             </div>
 
             {/* Status + actions */}
-            <ApplicationStatusControl
-              applicationId={application.id}
-              initialStatus={application.status}
-            />
+            <div className="flex flex-col items-end gap-3">
+              <ApplicationStatusControl
+                applicationId={application.id}
+                initialStatus={application.status}
+              />
+              {INTERVIEW_PREP_STAGES.includes(application.status) && (
+                <Button
+                  variant="outline"
+                  nativeButton={false}
+                  render={
+                    <Link
+                      href={`/dashboard/applications/${application.id}/prep`}
+                    />
+                  }
+                  className="gap-2 rounded-full"
+                >
+                  <PrepIcon className="h-4 w-4" />
+                  Prep for Interview
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -202,6 +246,12 @@ export default async function ApplicationDetailPage({
                 )}
               </div>
             </div>
+          }
+          followUpsContent={
+            <FollowUpList
+              applicationId={application.id}
+              initialDrafts={followUps}
+            />
           }
         />
       </div>
@@ -337,6 +387,27 @@ function BarChartIcon({ className }: { className?: string }) {
       <line x1="12" x2="12" y1="20" y2="10" />
       <line x1="18" x2="18" y1="20" y2="4" />
       <line x1="6" x2="6" y1="20" y2="16" />
+    </svg>
+  );
+}
+
+function PrepIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+      <path d="M8 7h6" />
+      <path d="M8 11h8" />
     </svg>
   );
 }

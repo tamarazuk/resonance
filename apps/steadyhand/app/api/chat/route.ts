@@ -1,9 +1,13 @@
-import { streamText, tool } from "ai"
-import { openai } from "@ai-sdk/openai"
-import { z } from "zod"
-import { db, experiences } from "@resonance/db"
-import { auth } from "@/lib/auth"
-import { generateEmbedding } from "@/lib/llm/embeddings"
+import { streamText, tool } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { z } from "zod";
+import { db, experiences, users, eq } from "@resonance/db";
+import { auth } from "@/lib/auth";
+import { generateEmbedding } from "@/lib/llm/embeddings";
+import {
+  analyzeUserState,
+  emotionalContextPrompt,
+} from "@/lib/emotional-intelligence";
 
 const SYSTEM_PROMPT = `You are a warm, insightful career coach helping professionals capture and refine their work experiences.
 
@@ -19,21 +23,52 @@ Guidelines:
 - Extract concrete, quantifiable results when possible.
 - Identify relevant skills demonstrated in each story.
 - Be encouraging but honest. Help the user articulate impact clearly.
-- You can discuss career strategy, interview prep, and job search topics too.`
+- You can discuss career strategy, interview prep, and job search topics too.`;
 
 export async function POST(req: Request) {
-  const session = await auth()
+  const session = await auth();
 
   if (!session?.user?.id) {
-    return new Response("Unauthorized", { status: 401 })
+    return new Response("Unauthorized", { status: 401 });
   }
 
-  const { messages } = await req.json()
-  const userId = session.user.id
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return new Response("Invalid JSON body", { status: 400 });
+  }
+
+  const messages =
+    typeof body === "object" && body !== null && "messages" in body
+      ? (body as { messages: unknown }).messages
+      : null;
+
+  if (!Array.isArray(messages)) {
+    return new Response("Invalid payload: messages must be an array", {
+      status: 400,
+    });
+  }
+  const userId = session.user.id;
+
+  // Check if EI is enabled and build emotional context
+  const [user] = await db
+    .select({
+      emotionalIntelligenceEnabled: users.emotionalIntelligenceEnabled,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  let systemPrompt = SYSTEM_PROMPT;
+  if (user?.emotionalIntelligenceEnabled) {
+    const emotionalContext = await analyzeUserState(userId);
+    systemPrompt += emotionalContextPrompt(emotionalContext);
+  }
 
   const result = streamText({
     model: openai("gpt-4o"),
-    system: SYSTEM_PROMPT,
+    system: systemPrompt,
     messages,
     tools: {
       saveExperienceToMemoryBank: tool({
@@ -45,13 +80,13 @@ export async function POST(req: Request) {
         inputSchema: z.object({
           rawInput: z
             .string()
-            .describe("The user's original story, summarized faithfully in 2-4 sentences"),
+            .describe(
+              "The user's original story, summarized faithfully in 2-4 sentences",
+            ),
           situation: z
             .string()
             .describe("The context and background of the experience"),
-          task: z
-            .string()
-            .describe("What was required or the challenge faced"),
+          task: z.string().describe("What was required or the challenge faced"),
           action: z
             .string()
             .describe("Specific steps the user took (first person)"),
@@ -60,9 +95,18 @@ export async function POST(req: Request) {
             .describe("Quantifiable outcomes and impact achieved"),
           skills: z
             .array(z.string())
-            .describe("Technical and soft skills demonstrated in this experience"),
+            .describe(
+              "Technical and soft skills demonstrated in this experience",
+            ),
         }),
-        execute: async ({ rawInput, situation, task, action, result, skills }) => {
+        execute: async ({
+          rawInput,
+          situation,
+          task,
+          action,
+          result,
+          skills,
+        }) => {
           // Build the full text for embedding from the STAR fields
           const embeddingText = [
             `Situation: ${situation}`,
@@ -70,9 +114,9 @@ export async function POST(req: Request) {
             `Action: ${action}`,
             `Result: ${result}`,
             `Skills: ${skills.join(", ")}`,
-          ].join("\n")
+          ].join("\n");
 
-          const embedding = await generateEmbedding(embeddingText)
+          const embedding = await generateEmbedding(embeddingText);
 
           const [saved] = await db
             .insert(experiences)
@@ -86,18 +130,18 @@ export async function POST(req: Request) {
               skills,
               embedding,
             })
-            .returning({ id: experiences.id })
+            .returning({ id: experiences.id });
 
           return {
             success: true,
             experienceId: saved!.id,
             summary: `Saved: "${rawInput.slice(0, 80)}${rawInput.length > 80 ? "..." : ""}"`,
             skillCount: skills.length,
-          }
+          };
         },
       }),
     },
-  })
+  });
 
-  return result.toUIMessageStreamResponse()
+  return result.toUIMessageStreamResponse();
 }
