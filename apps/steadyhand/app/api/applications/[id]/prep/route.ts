@@ -125,40 +125,26 @@ export async function POST(_req: Request, { params }: RouteParams) {
   const calmModeData = calmModeResult.success ? calmModeResult.data! : null;
 
   // 6. Upsert the prep packet
-  // Check if one already exists for this application
-  const [existing] = await db
-    .select({ id: prepPackets.id })
-    .from(prepPackets)
-    .where(
-      and(eq(prepPackets.applicationId, id), eq(prepPackets.userId, userId)),
-    );
-
-  let packet;
-
-  if (existing) {
-    [packet] = await db
-      .update(prepPackets)
-      .set({
+  const [packet] = await db
+    .insert(prepPackets)
+    .values({
+      userId,
+      applicationId: id,
+      companyResearch,
+      predictedQuestions: predictedQuestionsList,
+      talkingPoints: talkingPointsList,
+      calmModeData,
+    })
+    .onConflictDoUpdate({
+      target: [prepPackets.userId, prepPackets.applicationId],
+      set: {
         companyResearch,
         predictedQuestions: predictedQuestionsList,
         talkingPoints: talkingPointsList,
         calmModeData,
-      })
-      .where(eq(prepPackets.id, existing.id))
-      .returning();
-  } else {
-    [packet] = await db
-      .insert(prepPackets)
-      .values({
-        userId,
-        applicationId: id,
-        companyResearch,
-        predictedQuestions: predictedQuestionsList,
-        talkingPoints: talkingPointsList,
-        calmModeData,
-      })
-      .returning();
-  }
+      },
+    })
+    .returning();
 
   return NextResponse.json(packet);
 }

@@ -6,6 +6,7 @@ import {
   jsonb,
   pgEnum,
   boolean,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { vector } from "drizzle-orm/pg-core/columns/vector_extension/vector";
 import { relations } from "drizzle-orm";
@@ -154,46 +155,54 @@ export const applications = pgTable("applications", {
 
 // ==================== Prep Packets Table ====================
 
-export const prepPackets = pgTable("prep_packets", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  applicationId: uuid("application_id")
-    .notNull()
-    .references(() => applications.id, { onDelete: "cascade" }),
-  companyResearch: jsonb("company_research").$type<{
-    overview: string;
-    culture: string;
-    recentNews: string;
-    industry: string;
-    size: string;
-  }>(),
-  predictedQuestions: jsonb("predicted_questions").$type<
-    Array<{
-      question: string;
-      category: string;
-      suggestedStoryId?: string;
-      suggestedStoryPreview?: string;
-    }>
-  >(),
-  talkingPoints: jsonb("talking_points").$type<
-    Array<{
-      point: string;
-      supportingExperience?: string;
-    }>
-  >(),
-  calmModeData: jsonb("calm_mode_data").$type<{
-    keyPoints: [string, string, string];
-    openingStory: { title: string; preview: string };
-    groundingPrompt: string;
-  }>(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at")
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
-});
+export const prepPackets = pgTable(
+  "prep_packets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    applicationId: uuid("application_id")
+      .notNull()
+      .references(() => applications.id, { onDelete: "cascade" }),
+    companyResearch: jsonb("company_research").$type<{
+      overview: string;
+      culture: string;
+      recentNews: string;
+      industry: string;
+      size: string;
+    }>(),
+    predictedQuestions: jsonb("predicted_questions").$type<
+      Array<{
+        question: string;
+        category: string;
+        suggestedStoryId?: string;
+        suggestedStoryPreview?: string;
+      }>
+    >(),
+    talkingPoints: jsonb("talking_points").$type<
+      Array<{
+        point: string;
+        supportingExperience?: string;
+      }>
+    >(),
+    calmModeData: jsonb("calm_mode_data").$type<{
+      keyPoints: [string, string, string];
+      openingStory: { title: string; preview: string };
+      groundingPrompt: string;
+    }>(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    prepPacketsUserApplicationUniqueIdx: uniqueIndex(
+      "prep_packets_user_application_unique_idx",
+    ).on(table.userId, table.applicationId),
+  }),
+);
 
 // ==================== Follow-Up Drafts Table ====================
 
