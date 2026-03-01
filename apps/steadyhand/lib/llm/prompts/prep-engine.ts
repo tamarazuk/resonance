@@ -121,8 +121,12 @@ ${formatExperiences(experiences)}`;
     userPrompt,
     temperature: 0.4,
     parse: (raw) => {
-      const parsed = talkingPointsSchema.parse(JSON.parse(raw));
-      return parsed.talkingPoints;
+      try {
+        const parsed = talkingPointsSchema.parse(JSON.parse(raw));
+        return parsed.talkingPoints;
+      } catch {
+        throw new Error("Invalid talking points JSON response");
+      }
     },
   });
 }
