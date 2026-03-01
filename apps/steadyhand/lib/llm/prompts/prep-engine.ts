@@ -169,6 +169,12 @@ ${formatExperiences(experiences.slice(0, 3))}`;
     systemPrompt: CALM_MODE_SYSTEM_PROMPT,
     userPrompt,
     temperature: 0.3,
-    parse: (raw) => calmModeSchema.parse(JSON.parse(raw)),
+    parse: (raw) => {
+      try {
+        return calmModeSchema.parse(JSON.parse(raw));
+      } catch {
+        throw new Error("Invalid calm mode JSON response");
+      }
+    },
   });
 }
