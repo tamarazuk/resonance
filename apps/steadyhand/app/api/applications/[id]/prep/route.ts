@@ -11,6 +11,23 @@ import {
 
 type RouteParams = { params: Promise<{ id: string }> };
 
+const PREP_PIPELINE_TIMEOUT_MS = 20_000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  });
+}
+
 /** GET /api/applications/[id]/prep — retrieve existing prep packet. */
 export async function GET(_req: Request, { params }: RouteParams) {
   const session = await auth();
@@ -74,55 +91,84 @@ export async function POST(_req: Request, { params }: RouteParams) {
 
   const parsedJD = application.parsedJD;
 
-  // 1. Company research (Firecrawl + LLM fallback)
-  const companyResult = await researchCompany(
-    parsedJD.company,
-    application.externalUrl !== "manual_entry"
-      ? application.externalUrl
-      : undefined,
-  );
-  const companyResearch = companyResult.success ? companyResult.data! : null;
+  let companyResearch:
+    | Awaited<ReturnType<typeof researchCompany>>["data"]
+    | null;
+  let topExperiences: Awaited<
+    ReturnType<typeof rankExperiencesByFit>
+  >[number]["experience"][];
+  let predictedQuestionsList: Awaited<
+    ReturnType<typeof predictQuestions>
+  >["data"] = [];
+  let talkingPointsList: Awaited<
+    ReturnType<typeof generateTalkingPoints>
+  >["data"] = [];
+  let calmModeData: Awaited<ReturnType<typeof distillCalmMode>>["data"] | null;
 
-  // 2. Rank user experiences by fit
-  const rankedExperiences = await rankExperiencesByFit(parsedJD, userId);
-  const topExperiences = rankedExperiences.map((s) => s.experience);
+  try {
+    // 1. Company research (Firecrawl + LLM fallback)
+    const companyResult = await withTimeout(
+      researchCompany(
+        parsedJD.company,
+        application.externalUrl !== "manual_entry"
+          ? application.externalUrl
+          : undefined,
+      ),
+      PREP_PIPELINE_TIMEOUT_MS,
+      "Company research",
+    );
+    companyResearch = companyResult.success ? companyResult.data! : null;
 
-  // 3. Predict interview questions
-  const questionsResult = await predictQuestions(parsedJD, companyResearch);
-  let predictedQuestionsList = questionsResult.success
-    ? questionsResult.data!
-    : [];
+    // 2. Rank user experiences by fit
+    const rankedExperiences = await rankExperiencesByFit(parsedJD, userId);
+    topExperiences = rankedExperiences.map((s) => s.experience);
 
-  // Map predicted questions to closest Memory Bank stories
-  if (predictedQuestionsList.length > 0 && topExperiences.length > 0) {
-    predictedQuestionsList = predictedQuestionsList.map((q) => {
-      // Simple heuristic: assign the first relevant experience
-      const bestMatch = topExperiences[0];
-      return {
-        ...q,
-        suggestedStoryId: bestMatch?.id,
-        suggestedStoryPreview: bestMatch?.rawInput?.slice(0, 100),
-      };
-    });
+    // 3. Predict interview questions
+    const questionsResult = await withTimeout(
+      predictQuestions(parsedJD, companyResearch),
+      PREP_PIPELINE_TIMEOUT_MS,
+      "Question prediction",
+    );
+    predictedQuestionsList = questionsResult.success
+      ? questionsResult.data!
+      : [];
+
+    // Map predicted questions to closest Memory Bank stories
+    if (predictedQuestionsList.length > 0 && topExperiences.length > 0) {
+      predictedQuestionsList = predictedQuestionsList.map((q) => {
+        // Simple heuristic: assign the first relevant experience
+        const bestMatch = topExperiences[0];
+        return {
+          ...q,
+          suggestedStoryId: bestMatch?.id,
+          suggestedStoryPreview: bestMatch?.rawInput?.slice(0, 100),
+        };
+      });
+    }
+
+    // 4. Generate talking points
+    const talkingPointsResult = await withTimeout(
+      generateTalkingPoints(parsedJD, companyResearch, topExperiences),
+      PREP_PIPELINE_TIMEOUT_MS,
+      "Talking points generation",
+    );
+    talkingPointsList = talkingPointsResult.success
+      ? talkingPointsResult.data!
+      : [];
+
+    // 5. Calm Mode distillation
+    const calmModeResult = await withTimeout(
+      distillCalmMode(talkingPointsList, topExperiences, parsedJD.company),
+      PREP_PIPELINE_TIMEOUT_MS,
+      "Calm mode distillation",
+    );
+    calmModeData = calmModeResult.success ? calmModeResult.data! : null;
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to generate prep packet";
+    const status = message.includes("timed out") ? 504 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
-
-  // 4. Generate talking points
-  const talkingPointsResult = await generateTalkingPoints(
-    parsedJD,
-    companyResearch,
-    topExperiences,
-  );
-  const talkingPointsList = talkingPointsResult.success
-    ? talkingPointsResult.data!
-    : [];
-
-  // 5. Calm Mode distillation
-  const calmModeResult = await distillCalmMode(
-    talkingPointsList,
-    topExperiences,
-    parsedJD.company,
-  );
-  const calmModeData = calmModeResult.success ? calmModeResult.data! : null;
 
   // 6. Upsert the prep packet
   const [packet] = await db
