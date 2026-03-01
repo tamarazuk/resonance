@@ -34,6 +34,7 @@ export function FollowUpDraft({
   const [editing, setEditing] = useState(false);
   const [content, setContent] = useState(draft.content);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!editing) {
@@ -47,6 +48,7 @@ export function FollowUpDraft({
       return;
     }
     setSaving(true);
+    setError(null);
     try {
       const updated = await updateFollowUp(applicationId, draft.id, {
         content,
@@ -57,6 +59,7 @@ export function FollowUpDraft({
       // Revert on failure
       setContent(draft.content);
       setEditing(false);
+      setError("Couldn't save this draft. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -65,13 +68,14 @@ export function FollowUpDraft({
   async function handleStatusChange(status: "approved" | "dismissed") {
     if (saving) return;
     setSaving(true);
+    setError(null);
     try {
       const updated = await updateFollowUp(applicationId, draft.id, {
         status,
       });
       onUpdated(updated);
     } catch {
-      // silently fail — the UI state won't change
+      setError("Couldn't update status. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -171,6 +175,8 @@ export function FollowUpDraft({
           )}
         </div>
       )}
+
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }
