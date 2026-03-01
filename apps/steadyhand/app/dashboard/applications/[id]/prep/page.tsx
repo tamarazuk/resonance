@@ -78,7 +78,7 @@ export default async function PrepPage({
   const company = application.parsedJD?.company;
 
   return (
-    <main className="flex flex-1 justify-center px-4 py-10 sm:px-6 lg:px-8">
+    <div className="flex flex-1 justify-center px-4 py-10 sm:px-6 lg:px-8">
       <div className="w-full max-w-[1024px] space-y-8">
         {/* Breadcrumb */}
         <nav className="flex items-center text-sm text-muted-foreground">
@@ -117,7 +117,7 @@ export default async function PrepPage({
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }
 
