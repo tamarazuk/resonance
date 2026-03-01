@@ -7,10 +7,7 @@ const followUpDraftSchema = z.object({
   suggestedDelay: z.string(),
 });
 
-interface FollowUpDraftResult {
-  content: string;
-  suggestedDelay: string;
-}
+type FollowUpDraftResult = z.infer<typeof followUpDraftSchema>;
 
 const SYSTEM_PROMPTS: Record<FollowUpType, string> = {
   thank_you: `You are a professional career coach helping a candidate write a thank-you message after an interview.
