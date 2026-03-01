@@ -8,6 +8,7 @@ import {
   generateTalkingPoints,
   distillCalmMode,
 } from "@/lib/llm/prompts/prep-engine";
+import { MANUAL_ENTRY_LABEL } from "@/lib/applications/constants";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -125,7 +126,7 @@ export async function POST(_req: Request, { params }: RouteParams) {
     const companyResult = await withTimeout(
       researchCompany(
         parsedJD.company,
-        application.externalUrl !== "manual_entry"
+        application.externalUrl !== MANUAL_ENTRY_LABEL
           ? application.externalUrl
           : undefined,
       ),
