@@ -151,7 +151,7 @@ export function createFollowUp(
 export function updateFollowUp(
   applicationId: string,
   followUpId: string,
-  data: { content?: string; status?: string },
+  data: { content?: string; status?: FollowUpDraft["status"] },
 ): Promise<FollowUpDraft> {
   return request<FollowUpDraft>(
     `/api/applications/${applicationId}/follow-ups/${followUpId}`,
