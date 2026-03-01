@@ -5,7 +5,7 @@ import type {
   FollowUpDraft as FollowUpDraftType,
   FollowUpType,
 } from "@resonance/types";
-import { listFollowUps, createFollowUp } from "@/lib/api/client";
+import { createFollowUp } from "@/lib/api/client";
 import { FollowUpDraft } from "./FollowUpDraft";
 import {
   EmptyState,
@@ -50,18 +50,6 @@ export function FollowUpList({
   const handleDraftUpdated = useCallback((updated: FollowUpDraftType) => {
     setDrafts((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
   }, []);
-
-  // Refetch after status changes that might reorder things
-  const handleRefresh = useCallback(async () => {
-    try {
-      const fresh = await listFollowUps(applicationId);
-      setDrafts(fresh);
-    } catch {
-      // Keep existing state on failure
-    }
-  }, [applicationId]);
-  // expose handleRefresh for potential future use
-  void handleRefresh;
 
   return (
     <div className="space-y-6">
