@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FollowUpDraft as FollowUpDraftType } from "@resonance/types";
 import { updateFollowUp } from "@/lib/api/client";
 
@@ -34,6 +34,12 @@ export function FollowUpDraft({
   const [editing, setEditing] = useState(false);
   const [content, setContent] = useState(draft.content);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!editing) {
+      setContent(draft.content);
+    }
+  }, [draft.id, draft.content, editing]);
 
   async function handleSave() {
     if (saving || content === draft.content) {
