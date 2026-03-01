@@ -83,6 +83,8 @@ function ChevronIcon({ className }: { className?: string }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
+      aria-hidden="true"
+      focusable="false"
     >
       <path d="m6 9 6 6 6-6" />
     </svg>
