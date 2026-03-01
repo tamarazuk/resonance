@@ -1,5 +1,5 @@
 import type { UserEmotionalContext } from "@resonance/types";
-import { db, applications, eq, and, gte, desc } from "@resonance/db";
+import { db, applications, eq, and, gte, desc, sql } from "@resonance/db";
 import { subDays } from "date-fns";
 
 /**
@@ -13,8 +13,8 @@ export async function analyzeUserState(
   const sevenDaysAgo = subDays(now, 7);
 
   // Count rejections in the last 7 days
-  const recentRejections = await db
-    .select()
+  const [recentRejectionsRow] = await db
+    .select({ count: sql<number>`count(*)` })
     .from(applications)
     .where(
       and(
@@ -23,6 +23,8 @@ export async function analyzeUserState(
         gte(applications.updatedAt, sevenDaysAgo),
       ),
     );
+
+  const recentRejectionsCount = Number(recentRejectionsRow?.count ?? 0);
 
   // Get most recent activity (any application update)
   const [latestActivity] = await db
@@ -43,8 +45,8 @@ export async function analyzeUserState(
   const thirtyDaysAgo = subDays(now, 30);
   const fourteenDaysAgo = subDays(now, 14);
 
-  const recentApps = await db
-    .select()
+  const [recentAppsRow] = await db
+    .select({ count: sql<number>`count(*)` })
     .from(applications)
     .where(
       and(
@@ -53,8 +55,8 @@ export async function analyzeUserState(
       ),
     );
 
-  const olderApps = await db
-    .select()
+  const [thirtyDayAppsRow] = await db
+    .select({ count: sql<number>`count(*)` })
     .from(applications)
     .where(
       and(
@@ -63,8 +65,21 @@ export async function analyzeUserState(
       ),
     );
 
-  const recentCount = recentApps.length;
-  const olderCount = olderApps.length - recentCount; // Apps from 14-30 days ago
+  const [recentOffersRow] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(applications)
+    .where(
+      and(
+        eq(applications.userId, userId),
+        eq(applications.status, "offer"),
+        gte(applications.createdAt, fourteenDaysAgo),
+      ),
+    );
+
+  const recentCount = Number(recentAppsRow?.count ?? 0);
+  const totalThirtyDayCount = Number(thirtyDayAppsRow?.count ?? 0);
+  const olderCount = Math.max(0, totalThirtyDayCount - recentCount); // Apps from 14-30 days ago
+  const hasRecentOffer = Number(recentOffersRow?.count ?? 0) > 0;
 
   let activityTrend: UserEmotionalContext["activityTrend"];
   if (daysSinceActive > 7) {
@@ -79,18 +94,18 @@ export async function analyzeUserState(
 
   // Determine suggested tone
   let suggestedTone: UserEmotionalContext["suggestedTone"];
-  if (recentRejections.length >= 3) {
+  if (recentRejectionsCount >= 3) {
     suggestedTone = "supportive";
   } else if (daysSinceActive > 5) {
     suggestedTone = "encouraging";
-  } else if (recentApps.some((app) => app.status === "offer")) {
+  } else if (hasRecentOffer) {
     suggestedTone = "celebratory";
   } else {
     suggestedTone = "standard";
   }
 
   return {
-    recentRejections: recentRejections.length,
+    recentRejections: recentRejectionsCount,
     daysSinceActive,
     activityTrend,
     suggestedTone,
