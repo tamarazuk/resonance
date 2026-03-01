@@ -19,6 +19,12 @@ import {
 } from "@resonance/ui/components/empty-state";
 import { Button } from "@resonance/ui/components/button";
 
+const INTERVIEW_PREP_STAGES: Application["status"][] = [
+  "phone_screen",
+  "technical_interview",
+  "final_interview",
+];
+
 async function getApplication(id: string): Promise<Application | null> {
   try {
     const cookieStore = await cookies();
@@ -153,13 +159,7 @@ export default async function ApplicationDetailPage({
                 applicationId={application.id}
                 initialStatus={application.status}
               />
-              {(
-                [
-                  "phone_screen",
-                  "technical_interview",
-                  "final_interview",
-                ] as string[]
-              ).includes(application.status) && (
+              {INTERVIEW_PREP_STAGES.includes(application.status) && (
                 <Button
                   variant="outline"
                   nativeButton={false}
