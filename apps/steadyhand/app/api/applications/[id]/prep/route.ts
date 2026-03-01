@@ -12,6 +12,11 @@ import {
 type RouteParams = { params: Promise<{ id: string }> };
 
 const PREP_PIPELINE_TIMEOUT_MS = 20_000;
+const PREP_ELIGIBLE_STATUSES = new Set([
+  "phone_screen",
+  "technical_interview",
+  "final_interview",
+]);
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string) {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -85,6 +90,16 @@ export async function POST(_req: Request, { params }: RouteParams) {
   if (!application.parsedJD) {
     return NextResponse.json(
       { error: "Job description has not been parsed yet" },
+      { status: 422 },
+    );
+  }
+
+  if (!PREP_ELIGIBLE_STATUSES.has(application.status)) {
+    return NextResponse.json(
+      {
+        error:
+          "Prep packets are only available for phone screen, technical interview, and final interview stages",
+      },
       { status: 422 },
     );
   }
