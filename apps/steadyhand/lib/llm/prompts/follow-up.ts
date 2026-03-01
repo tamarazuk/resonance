@@ -66,6 +66,12 @@ Write a ${type.replace("_", " ")} message for this situation.`;
     systemPrompt: SYSTEM_PROMPTS[type],
     userPrompt,
     temperature: 0.5,
-    parse: (raw) => followUpDraftSchema.parse(JSON.parse(raw)),
+    parse: (raw) => {
+      try {
+        return followUpDraftSchema.parse(JSON.parse(raw));
+      } catch {
+        throw new Error("Invalid follow-up JSON response");
+      }
+    },
   });
 }
