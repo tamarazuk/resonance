@@ -54,8 +54,12 @@ ${companyContext}`;
     userPrompt,
     temperature: 0.4,
     parse: (raw) => {
-      const parsed = predictedQuestionsSchema.parse(JSON.parse(raw));
-      return parsed.questions;
+      try {
+        const parsed = predictedQuestionsSchema.parse(JSON.parse(raw));
+        return parsed.questions;
+      } catch {
+        throw new Error("Invalid predicted questions JSON response");
+      }
     },
   });
 }
