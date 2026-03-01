@@ -1,6 +1,6 @@
 export default function LoadingPrepPage() {
   return (
-    <main className="flex flex-1 justify-center px-4 py-10 sm:px-6 lg:px-8">
+    <div className="flex flex-1 justify-center px-4 py-10 sm:px-6 lg:px-8">
       <div className="w-full max-w-[1024px] space-y-8">
         <div className="h-5 w-64 animate-pulse rounded bg-muted" />
         <div className="rounded-2xl border border-border bg-card p-8">
@@ -12,6 +12,6 @@ export default function LoadingPrepPage() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
