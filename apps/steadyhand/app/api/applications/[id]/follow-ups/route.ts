@@ -73,7 +73,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
   return NextResponse.json(drafts);
 }
 
-/** POST /api/applications/[id]/follow-up — generate a follow-up draft. */
+/** POST /api/applications/[id]/follow-ups — generate a follow-up draft. */
 export async function POST(req: Request, { params }: RouteParams) {
   const session = await auth();
 
