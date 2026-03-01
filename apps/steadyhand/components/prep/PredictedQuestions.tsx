@@ -46,7 +46,7 @@ export function PredictedQuestions({ questions }: PredictedQuestionsProps) {
                     "border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-400/20 dark:bg-gray-400/10 dark:text-gray-400"
                   }`}
                 >
-                  {q.category.replace("_", " ")}
+                  {q.category.replaceAll("_", " ")}
                 </span>
               </div>
               <ChevronIcon
