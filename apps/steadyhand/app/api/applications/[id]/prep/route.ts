@@ -135,9 +135,9 @@ export async function POST(_req: Request, { params }: RouteParams) {
 
     // Map predicted questions to closest Memory Bank stories
     if (predictedQuestionsList.length > 0 && topExperiences.length > 0) {
-      predictedQuestionsList = predictedQuestionsList.map((q) => {
-        // Simple heuristic: assign the first relevant experience
-        const bestMatch = topExperiences[0];
+      predictedQuestionsList = predictedQuestionsList.map((q, index) => {
+        // Simple heuristic: distribute suggested stories across top-ranked experiences
+        const bestMatch = topExperiences[index % topExperiences.length];
         return {
           ...q,
           suggestedStoryId: bestMatch?.id,
